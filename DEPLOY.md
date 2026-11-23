@@ -17,7 +17,7 @@ Backend ini sudah siap deploy: membaca `PORT` dari platform, ada `Dockerfile`,
 
 ## Jalur A — Render (disarankan, gratis, daftar pakai GitHub)
 
-1. Push folder proyek ini ke repo GitHub (mis. `kontenlaris-studio/skeleton-meta-ai`).
+1. Push folder proyek ini ke repo GitHub (mis. `jawaadalah/your-agent`).
    Pastikan `.env` **tidak** ikut — sudah ditahan `.gitignore`.
 2. Buka https://render.com → **Get Started** → daftar/login pakai GitHub.
 3. **New → Blueprint** → pilih repo tadi → Render membaca `render.yaml` proyek ini.

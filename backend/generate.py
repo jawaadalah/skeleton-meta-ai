@@ -350,8 +350,8 @@ def _android_files(title, pkg, activity):
 def android_app(nama, paket="", jenis="dasar"):
     title = " ".join(str(nama).split())[:60] or "AplikasiKu"
     slug = slugify(title, "aplikasi")
-    pkg = paket.strip() or f"studio.kontenlaris.{slug.replace('-', '')}"
-    pkg = re.sub(r"[^a-z0-9.]", "", pkg.lower()).strip(".") or "studio.kontenlaris.app"
+    pkg = paket.strip() or f"com.jawaadalah.{slug.replace('-', '')}"
+    pkg = re.sub(r"[^a-z0-9.]", "", pkg.lower()).strip(".") or "com.jawaadalah.app"
     base = GEN_DIR / "android" / slug
     files = _android_files(title, pkg, _ACTIVITY_BASIC)
     written = _write(base, files)
@@ -363,8 +363,8 @@ def android_app(nama, paket="", jenis="dasar"):
 def android_game(nama, paket=""):
     title = " ".join(str(nama).split())[:60] or "GameKu"
     slug = slugify(title, "game")
-    pkg = paket.strip() or f"studio.kontenlaris.{slug.replace('-', '')}"
-    pkg = re.sub(r"[^a-z0-9.]", "", pkg.lower()).strip(".") or "studio.kontenlaris.game"
+    pkg = paket.strip() or f"com.jawaadalah.{slug.replace('-', '')}"
+    pkg = re.sub(r"[^a-z0-9.]", "", pkg.lower()).strip(".") or "com.jawaadalah.game"
     base = GEN_DIR / "android" / slug
     files = _android_files(title, pkg, _ACTIVITY_GAME)
     written = _write(base, files)

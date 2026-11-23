@@ -1,4 +1,4 @@
-package studio.kontenlaris.skeleton
+package com.jawaadalah.youragent
 
 import android.app.AlertDialog
 import android.graphics.Color

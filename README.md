@@ -156,7 +156,7 @@ Server mengingat maks. 20 pesan terakhir per sesi, dan selalu menyisipkan
 - Pindah backend ke FastAPI/Node bila butuh fitur lebih — kontrak `/chat` di atas pertahankan saja.
 
 ---
-Your Agent oleh Kontenlaris Studio — fondasi, bukan produk jadi.
+Your Agent oleh Jawaadalah — fondasi, bukan produk jadi.
 
 ## Baru di v7 — Your Agent (nama baru, dulu Skeleton Meta AI)
 - **SOUL.md + MEMORY.md**: agen kini punya jati diri (backend/SOUL.md, persona "Skele")

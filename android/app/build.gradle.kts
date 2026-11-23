@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "studio.kontenlaris.skeleton"
+    namespace = "com.jawaadalah.youragent"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "studio.kontenlaris.skeleton"
+        applicationId = "com.jawaadalah.youragent"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
