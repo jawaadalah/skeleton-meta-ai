@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_btn">⚙ Einstellungen</string>
+    <string name="clear_btn">Leeren</string>
+    <string name="quota_loading">🪙 Übrige Tokens: lädt…</string>
+    <string name="input_hint">Nachricht schreiben...</string>
+    <string name="exit_desc">App beenden</string>
+    <string name="back_btn">← Zurück</string>
+    <string name="settings_title">Einstellungen</string>
+    <string name="save_btn">Einstellungen speichern</string>
+    <string name="exit_app">App beenden</string>
+    <string name="saved_toast">Einstellungen gespeichert</string>
+    <string name="sec_connection">Serververbindung</string>
+    <string name="label_backend_url">Backend-Adresse</string>
+    <string name="label_app_token">App-Token (falls das Backend APP_TOKEN nutzt)</string>
+    <string name="hint_empty">Leer lassen, falls keins vorhanden</string>
+    <string name="sec_llm">KI-Gehirn (API)</string>
+    <string name="llm_desc">Nutze deinen eigenen API-Schlüssel für jeden OpenAI-kompatiblen Anbieter. Leer lassen, um den Server-Standard zu nutzen. Der Schlüssel wird lokal auf deinem Handy gespeichert und pro Anfrage gesendet — der Server speichert ihn nie.</string>
+    <string name="label_provider">Anbieter</string>
+    <string name="label_base_url">API-Basis-URL</string>
+    <string name="label_model">Modell</string>
+    <string name="label_api_key">API-Schlüssel</string>
+    <string name="sec_features">Funktionen</string>
+    <string name="switch_agent_default">Agentenmodus von Anfang an aktiv</string>
+    <string name="switch_streaming">Antworten streamen (Text erscheint schrittweise)</string>
+    <string name="sec_appearance">Darstellung</string>
+    <string name="label_theme">App-Design</string>
+    <string name="theme_desc">Das Design gilt für den Chat-Bildschirm; der Chat-Bildschirm lädt beim Designwechsel automatisch neu.</string>
+    <string name="theme_navy">Premium Navy (dunkel)</string>
+    <string name="theme_bright">Hell</string>
+    <string name="theme_amoled">AMOLED (tiefschwarz)</string>
+    <string name="sec_language">Sprache</string>
+    <string name="label_language">Sprache der App &amp; KI-Antworten</string>
+    <string name="language_desc">Die App-Oberfläche und Skeles Antworten folgen dieser Auswahl.</string>
+    <string name="sec_quota">Backend-Kontingent &amp; Limits</string>
+    <string name="quota_loading_text">Kontingent wird vom Server geladen…</string>
+    <string name="quota_live_note">Live — aktualisiert sich automatisch, solange diese Seite offen ist, und nach jedem Chat auf dem Hauptbildschirm.</string>
+    <string name="quota_model_active">Aktives Modell: %1$s</string>
+    <string name="quota_not_ready">Kontingent noch nicht gelesen — der Server erfasst es nach der ersten KI-Anfrage seit dem Start. Sende zuerst eine Chat-Nachricht und komm dann hierher zurück.</string>
+    <string name="quota_tokens">🪙 Übrige Tokens: %1$s / %2$s</string>
+    <string name="quota_requests">📨 Übrige Anfragen: %1$s / %2$s</string>
+    <string name="quota_reset_tokens">⏳ Tokens werden zurückgesetzt in: %1$s</string>
+    <string name="quota_reset_requests">⏳ Anfragen werden zurückgesetzt in: %1$s</string>
+    <string name="quota_failed">Kontingent konnte nicht geladen werden: %1$s</string>
+    <string name="quota_conn_problem">Verbindungsproblem</string>
+    <string name="countdown_now">jetzt</string>
+    <string name="sec_about">Über die App</string>
+    <string name="about_text">Your Agent v%1$s — dein persönlicher KI-Assistent mit Agentenmodus und APK-Fabrik
+
+Hauptfunktionen:
+• Streaming-Chat mit dem KI-Gehirn deiner Wahl (BYOK: Groq, OpenRouter, OpenAI, Gemini oder eigener Server)
+• Agentenmodus: 16 Skills — Rechner, Notizen, Langzeitgedächtnis, Web abrufen, Projektgenerator, APK-Fabrik, Fullstack-Kernskill
+• APK-Fabrik: Android-Apps &amp; Spiele direkt aus dem Chat in echte APK-Dateien verwandeln
+• Intelligenter Generator: Code von der KI nach deinen Anweisungen geschrieben, von Validatoren geprüft, mit Template-Fallback
+• Token-Info pro Antwort + Live-Backend-Kontingent (Leiste auf dem Hauptbildschirm &amp; Kontingent-Karte hier)
+• Bestätigungstor für zerstörerische Aktionen
+• Lokaler Chatverlauf + Sitzungen &amp; Gedächtnis auf dem Backend gespeichert
+
+Backend: jawaadalah.pythonanywhere.com
+Quellcode: github.com/jawaadalah/your-agent
+Erstellt von Jawaadalah (J-DEV).</string>
+    <string name="strip_quota">🪙 Übrige Tokens: %1$s / %2$s  •  Übrige Anfragen: %3$s / %4$s</string>
+    <string name="usage_line">🪙 Tokens: %1$s (Eingang %2$s • Ausgang %3$s)</string>
+    <string name="phase_connect">Backend wird kontaktiert</string>
+    <string name="phase_thinking">Skele denkt nach</string>
+    <string name="phase_composing">Antwort wird verfasst</string>
+    <string name="phase_planning">Agent plant die Schritte</string>
+    <string name="phase_executing">Skill wird ausgeführt</string>
+    <string name="confirm_title">Agentenaktion bestätigen</string>
+    <string name="confirm_msg">Der Agent möchte eine zerstörerische Aktion ausführen: %1$s.
+Sie wurde noch nicht ausgeführt. Fortfahren?</string>
+    <string name="confirm_yes">Ja, ausführen</string>
+    <string name="confirm_no">Abbrechen</string>
+    <string name="confirm_cancelled">Aktion %1$s abgebrochen — es wurde nichts ausgeführt.</string>
+    <string name="done_fallback">(fertig)</string>
+    <string name="chat_cleared">Chat geleert. Fangen wir neu an.</string>
+    <string name="err_no_net">Keine Internetverbindung oder der Server ist nicht erreichbar. Prüfe das Netzwerk deines Handys und versuch es erneut.</string>
+    <string name="err_timeout">Der Server hat zu lange gebraucht (Timeout). Versuch das Senden gleich noch einmal.</string>
+    <string name="err_generic">Entschuldigung, der Server konnte nicht erreicht werden: %1$s. Prüfe dein Netzwerk und versuch es erneut.</string>
+    <string name="stream_cut">[Verbindung mitten in der Antwort abgebrochen]</string>
+</resources>

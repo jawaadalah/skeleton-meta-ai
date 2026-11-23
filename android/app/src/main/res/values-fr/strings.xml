@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_btn">⚙ Réglages</string>
+    <string name="clear_btn">Effacer</string>
+    <string name="quota_loading">🪙 Tokens restants : chargement…</string>
+    <string name="input_hint">Écrivez un message...</string>
+    <string name="exit_desc">Quitter l\'application</string>
+    <string name="back_btn">← Retour</string>
+    <string name="settings_title">Réglages</string>
+    <string name="save_btn">Enregistrer</string>
+    <string name="exit_app">Quitter l\'app</string>
+    <string name="saved_toast">Réglages enregistrés</string>
+    <string name="sec_connection">Connexion au serveur</string>
+    <string name="label_backend_url">Adresse du backend</string>
+    <string name="label_app_token">Jeton de l\'app (si le backend utilise APP_TOKEN)</string>
+    <string name="hint_empty">Laissez vide s\'il n\'y en a pas</string>
+    <string name="sec_llm">Cerveau IA (API)</string>
+    <string name="llm_desc">Utilisez votre propre clé API pour tout fournisseur compatible OpenAI. Laissez vide pour utiliser celle du serveur. La clé est stockée localement sur votre téléphone et envoyée par requête — le serveur ne la conserve jamais.</string>
+    <string name="label_provider">Fournisseur</string>
+    <string name="label_base_url">URL de base de l\'API</string>
+    <string name="label_model">Modèle</string>
+    <string name="label_api_key">Clé API</string>
+    <string name="sec_features">Fonctionnalités</string>
+    <string name="switch_agent_default">Mode Agent actif dès le départ</string>
+    <string name="switch_streaming">Réponses en streaming (le texte apparaît progressivement)</string>
+    <string name="sec_appearance">Apparence</string>
+    <string name="label_theme">Thème de l\'app</string>
+    <string name="theme_desc">Le thème s\'applique à l\'écran de chat ; l\'écran de chat se recharge automatiquement quand le thème change.</string>
+    <string name="theme_navy">Premium Navy (sombre)</string>
+    <string name="theme_bright">Clair</string>
+    <string name="theme_amoled">AMOLED (noir pur)</string>
+    <string name="sec_language">Langue</string>
+    <string name="label_language">Langue de l\'app et des réponses IA</string>
+    <string name="language_desc">L\'interface de l\'app et les réponses de Skele suivent ce choix.</string>
+    <string name="sec_quota">Quota et limites du backend</string>
+    <string name="quota_loading_text">Chargement du quota depuis le serveur…</string>
+    <string name="quota_live_note">En direct — se met à jour automatiquement tant que cette page est ouverte, et après chaque discussion sur l\'écran principal.</string>
+    <string name="quota_model_active">Modèle actif : %1$s</string>
+    <string name="quota_not_ready">Quota pas encore lu — le serveur le capture après la première requête IA depuis son démarrage. Envoyez d\'abord un message de chat, puis revenez ici.</string>
+    <string name="quota_tokens">🪙 Tokens restants : %1$s / %2$s</string>
+    <string name="quota_requests">📨 Requêtes restantes : %1$s / %2$s</string>
+    <string name="quota_reset_tokens">⏳ Tokens réinitialisés dans : %1$s</string>
+    <string name="quota_reset_requests">⏳ Requêtes réinitialisées dans : %1$s</string>
+    <string name="quota_failed">Échec du chargement du quota : %1$s</string>
+    <string name="quota_conn_problem">problème de connexion</string>
+    <string name="countdown_now">maintenant</string>
+    <string name="sec_about">À propos</string>
+    <string name="about_text">Your Agent v%1$s — votre assistant IA personnel avec Mode Agent et Usine à APK
+
+Fonctionnalités principales:
+• Chat en streaming avec le cerveau IA de votre choix (BYOK : Groq, OpenRouter, OpenAI, Gemini ou votre propre serveur)
+• Mode Agent : 16 compétences — calculatrice, notes, mémoire à long terme, récupération web, générateur de projets, usine à APK, compétence centrale fullstack
+• Usine à APK : transformez apps et jeux Android en vrais fichiers APK depuis le chat
+• Générateur Intelligent : code écrit par l\'IA selon vos instructions, vérifié par des validateurs, modèle de secours
+• Infos tokens par réponse + quota backend en direct (barre sur l\'écran principal et carte Quota ici)
+• Confirmation obligatoire pour les actions destructrices
+• Historique de chat local + sessions et mémoire stockés sur le backend
+
+Backend: jawaadalah.pythonanywhere.com
+Code source: github.com/jawaadalah/your-agent
+Créé par Jawaadalah (J-DEV).</string>
+    <string name="strip_quota">🪙 Tokens restants : %1$s / %2$s  •  Requêtes restantes : %3$s / %4$s</string>
+    <string name="usage_line">🪙 Tokens : %1$s (entrée %2$s • sortie %3$s)</string>
+    <string name="phase_connect">Contact du backend</string>
+    <string name="phase_thinking">Skele réfléchit</string>
+    <string name="phase_composing">Rédaction de la réponse</string>
+    <string name="phase_planning">L\'agent planifie les étapes</string>
+    <string name="phase_executing">Exécution de la compétence</string>
+    <string name="confirm_title">Confirmer l\'action de l\'agent</string>
+    <string name="confirm_msg">L\'agent veut exécuter une action destructrice : %1$s.
+Elle n\'a pas encore été exécutée. Continuer ?</string>
+    <string name="confirm_yes">Oui, exécuter</string>
+    <string name="confirm_no">Annuler</string>
+    <string name="confirm_cancelled">Action %1$s annulée — rien n\'a été exécuté.</string>
+    <string name="done_fallback">(terminé)</string>
+    <string name="chat_cleared">Chat effacé. Recommençons.</string>
+    <string name="err_no_net">Pas de connexion internet ou serveur injoignable. Vérifiez le réseau de votre téléphone, puis réessayez.</string>
+    <string name="err_timeout">Le serveur a mis trop longtemps à répondre (timeout). Réessayez l\'envoi dans un instant.</string>
+    <string name="err_generic">Désolé, impossible de joindre le serveur : %1$s. Vérifiez votre réseau, puis réessayez.</string>
+    <string name="stream_cut">[Connexion interrompue au milieu de la réponse]</string>
+</resources>

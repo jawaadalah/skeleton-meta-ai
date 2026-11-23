@@ -141,6 +141,7 @@ class MainActivity : AppCompatActivity() {
             if (actionId == EditorInfo.IME_ACTION_SEND) { trySend(); true } else false
         }
         findViewById<Button>(R.id.buttonClear).setOnClickListener { clearChat() }
+        findViewById<Button>(R.id.buttonExit).setOnClickListener { finishAffinity() }
         findViewById<Button>(R.id.buttonSettings).setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
@@ -187,13 +188,14 @@ class MainActivity : AppCompatActivity() {
     /** Baris info token dari field usage backend (v12.5). "" bila tak ada. */
     private fun updateQuotaUI(quota: JSONObject?) {
         if (quota == null) return
-        val fmt = java.text.NumberFormat.getInstance(java.util.Locale("id", "ID"))
+        val fmt = java.text.NumberFormat.getInstance(resources.configuration.locales.get(0))
         fun num(key: String): String {
             val v = quota.optLong(key, -1)
             return if (v >= 0) fmt.format(v) else "?"
         }
-        textQuotaLive.text = "🪙 Sisa token: " + num("remaining_tokens") + " / " + num("limit_tokens") +
-            "  •  Sisa permintaan: " + num("remaining_requests") + " / " + num("limit_requests")
+        textQuotaLive.text = getString(R.string.strip_quota,
+            num("remaining_tokens"), num("limit_tokens"),
+            num("remaining_requests"), num("limit_requests"))
     }
 
     private val quotaPollMain = object : Runnable {
@@ -224,11 +226,11 @@ class MainActivity : AppCompatActivity() {
         if (usage == null) return ""
         val total = usage.optInt("total_tokens", 0)
         if (total <= 0) return ""
-        val fmt = NumberFormat.getInstance(Locale("id", "ID"))
+        val fmt = NumberFormat.getInstance(resources.configuration.locales.get(0))
         val masuk = usage.optInt("prompt_tokens", 0)
         val keluar = usage.optInt("completion_tokens", 0)
-        return "\n\n🪙 Token: " + fmt.format(total) +
-            " (masuk " + fmt.format(masuk) + " • keluar " + fmt.format(keluar) + ")"
+        return "\n\n" + getString(R.string.usage_line,
+            fmt.format(total), fmt.format(masuk), fmt.format(keluar))
     }
 
     /** Objek "llm" untuk body request (v11): override otak AI dari Pengaturan.
@@ -250,12 +252,14 @@ class MainActivity : AppCompatActivity() {
         addBubble(text, fromUser = true, save = true)
         setBusy(true)
         val bubble = addBubble("", fromUser = false, save = false)
-        startProcessLog(bubble, listOf("Menghubungi backend", "Skele sedang berpikir", "Menyusun jawaban"))
+        startProcessLog(bubble, listOf(getString(R.string.phase_connect),
+            getString(R.string.phase_thinking), getString(R.string.phase_composing)))
         executor.execute {
             var usageObj: JSONObject? = null
             val display = try {
                 val body = JSONObject().put("message", text).put("session_id", sessionId)
                 llmOverrideJson()?.let { body.put("llm", it) }
+                body.put("lang", langCode())
                 val conn = URL("$backendUrl/chat").openConnection() as HttpURLConnection
                 conn.requestMethod = "POST"
                 conn.setRequestProperty("Content-Type", "application/json")
@@ -411,7 +415,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 if (full.isEmpty()) full.append("(jawaban kosong dari backend)")
             } catch (e: Exception) {
-                if (full.isEmpty()) full.append(friendlyError(e)) else full.append("\n[Koneksi terputus di tengah jawaban]")
+                if (full.isEmpty()) full.append(friendlyError(e)) else full.append("\n" + getString(R.string.stream_cut))
             }
             val finalText = full.toString() + tokenLine(streamUsage?.optJSONObject("usage"))
             runOnUiThread {
@@ -427,15 +431,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun friendlyError(e: Exception): String = when (e) {
-        is UnknownHostException -> "Tidak ada koneksi internet atau server tidak terjangkau. Periksa jaringan HP kamu, lalu coba lagi."
-        is SocketTimeoutException -> "Server terlalu lama menjawab (timeout). Coba kirim lagi sebentar."
-        else -> "Maaf, gagal menghubungi server: ${e.message ?: "koneksi bermasalah"}. Periksa jaringan, lalu coba lagi."
+        is UnknownHostException -> getString(R.string.err_no_net)
+        is SocketTimeoutException -> getString(R.string.err_timeout)
+        else -> getString(R.string.err_generic, e.message ?: getString(R.string.quota_conn_problem))
     }
 
     /** POST /chat/stream — baca SSE: data {"chunk"} / {"done"} / {"error"}. */
     private fun streamChat(text: String, onChunk: (String) -> Unit): JSONObject? {
         val bodyObj = JSONObject().put("message", text).put("session_id", sessionId)
         llmOverrideJson()?.let { bodyObj.put("llm", it) }
+        bodyObj.put("lang", langCode())
         val body = bodyObj.toString()
         val conn = URL("$backendUrl/chat/stream").openConnection() as HttpURLConnection
         conn.requestMethod = "POST"
@@ -473,8 +478,9 @@ class MainActivity : AppCompatActivity() {
         addBubble(text, fromUser = true, save = true)
         setBusy(true)
         val bubble = addBubble("", fromUser = false, save = false)
-        startProcessLog(bubble, listOf("Menghubungi backend", "Agen merencanakan langkah",
-            "Menjalankan skill", "Menyusun jawaban"))
+        startProcessLog(bubble, listOf(getString(R.string.phase_connect),
+            getString(R.string.phase_planning), getString(R.string.phase_executing),
+            getString(R.string.phase_composing)))
 
         executor.execute {
             var display = ""
@@ -510,14 +516,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun askConfirmation(skillName: String, token: String) {
         AlertDialog.Builder(this)
-            .setTitle("Konfirmasi aksi agen")
-            .setMessage("Agen ingin menjalankan aksi merusak: $skillName.\nAksi ini belum dijalankan. Setuju?")
-            .setPositiveButton("Setuju, jalankan") { _, _ ->
+            .setTitle(getString(R.string.confirm_title))
+            .setMessage(getString(R.string.confirm_msg, skillName))
+            .setPositiveButton(getString(R.string.confirm_yes)) { _, _ ->
                 setBusy(true)
                 executor.execute {
                     val result = try {
                         val json = postAgent(JSONObject().put("session_id", sessionId).put("confirm_token", token))
-                        json.optString("reply", "(selesai)")
+                        json.optString("reply", getString(R.string.done_fallback))
                     } catch (e: Exception) {
                         friendlyError(e)
                     }
@@ -527,14 +533,18 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
-            .setNegativeButton("Batal") { _, _ ->
-                addBubble("Aksi $skillName dibatalkan — tidak ada yang dijalankan.", fromUser = false, save = true)
+            .setNegativeButton(getString(R.string.confirm_no)) { _, _ ->
+                addBubble(getString(R.string.confirm_cancelled, skillName), fromUser = false, save = true)
             }
             .show()
     }
 
+    /** Kode bahasa pilihan pengguna (Pengaturan -> Bahasa) untuk backend. */
+    private fun langCode(): String = prefs.getString("bahasa", "id") ?: "id"
+
     private fun postAgent(body: JSONObject): JSONObject {
         if (!body.has("llm")) llmOverrideJson()?.let { body.put("llm", it) }
+        if (!body.has("lang")) body.put("lang", langCode())
         val conn = URL("$backendUrl/agent").openConnection() as HttpURLConnection
         conn.requestMethod = "POST"
         conn.setRequestProperty("Content-Type", "application/json")
@@ -570,7 +580,7 @@ class MainActivity : AppCompatActivity() {
                 conn.inputStream.bufferedReader().use { it.readText() }
             } catch (_: Exception) { /* backend mati pun layar tetap dibersihkan */ }
         }
-        addBubble("Chat dibersihkan. Kita mulai dari awal.", fromUser = false, save = true)
+        addBubble(getString(R.string.chat_cleared), fromUser = false, save = true)
     }
 
     // ------------------------------------------------------------ bubble UI --

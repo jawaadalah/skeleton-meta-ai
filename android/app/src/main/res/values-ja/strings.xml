@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_btn">⚙ 設定</string>
+    <string name="clear_btn">クリア</string>
+    <string name="quota_loading">🪙 残りトークン：読み込み中…</string>
+    <string name="input_hint">メッセージを入力...</string>
+    <string name="exit_desc">アプリを終了</string>
+    <string name="back_btn">← 戻る</string>
+    <string name="settings_title">設定</string>
+    <string name="save_btn">設定を保存</string>
+    <string name="exit_app">アプリを終了</string>
+    <string name="saved_toast">設定を保存しました</string>
+    <string name="sec_connection">サーバー接続</string>
+    <string name="label_backend_url">バックエンドのアドレス</string>
+    <string name="label_app_token">アプリトークン（バックエンドが APP_TOKEN を使う場合）</string>
+    <string name="hint_empty">ない場合は空欄</string>
+    <string name="sec_llm">AIブレイン (API)</string>
+    <string name="llm_desc">OpenAI互換の任意のプロバイダーで自分のAPIキーを使えます。空欄ならサーバー標準を使用。キーは端末内にのみ保存され、リクエストごとに送信されます——サーバーに保存されることはありません。</string>
+    <string name="label_provider">プロバイダー</string>
+    <string name="label_base_url">APIベースURL</string>
+    <string name="label_model">モデル</string>
+    <string name="label_api_key">APIキー</string>
+    <string name="sec_features">機能</string>
+    <string name="switch_agent_default">最初からエージェントモードを有効化</string>
+    <string name="switch_streaming">ストリーミング回答（文字が順に表示）</string>
+    <string name="sec_appearance">外観</string>
+    <string name="label_theme">アプリのテーマ</string>
+    <string name="theme_desc">テーマはチャット画面に適用されます。テーマ変更時にチャット画面は自動で再読み込みされます。</string>
+    <string name="theme_navy">Premium Navy（ダーク）</string>
+    <string name="theme_bright">ライト</string>
+    <string name="theme_amoled">AMOLED（真っ黒）</string>
+    <string name="sec_language">言語</string>
+    <string name="label_language">アプリとAI回答の言語</string>
+    <string name="language_desc">アプリの画面とSkeleの回答はこの選択に従います。</string>
+    <string name="sec_quota">バックエンドのクォータと上限</string>
+    <string name="quota_loading_text">サーバーからクォータを読み込み中…</string>
+    <string name="quota_live_note">ライブ — このページを開いている間自動で更新され、メイン画面でのチャット後にも更新されます。</string>
+    <string name="quota_model_active">使用中のモデル：%1$s</string>
+    <string name="quota_not_ready">クォータはまだ読み取られていません——サーバーは起動後の最初のAIリクエスト後に取得します。先にチャットを1件送ってから戻ってきてください。</string>
+    <string name="quota_tokens">🪙 残りトークン：%1$s / %2$s</string>
+    <string name="quota_requests">📨 残りリクエスト：%1$s / %2$s</string>
+    <string name="quota_reset_tokens">⏳ トークンのリセットまで：%1$s</string>
+    <string name="quota_reset_requests">⏳ リクエストのリセットまで：%1$s</string>
+    <string name="quota_failed">クォータの読み込みに失敗：%1$s</string>
+    <string name="quota_conn_problem">接続の問題</string>
+    <string name="countdown_now">今</string>
+    <string name="sec_about">このアプリについて</string>
+    <string name="about_text">Your Agent v%1$s — エージェントモードとAPKファクトリーを備えた、あなた専用のAIアシスタント
+
+主な機能:
+• 好きなAIブレインでストリーミングチャット（BYOK：Groq、OpenRouter、OpenAI、Gemini、または自前サーバー）
+• エージェントモード：16スキル——計算機、メモ、長期記憶、Web取得、プロジェクト生成、APKファクトリー、コアfullstackスキル
+• APKファクトリー：チャットからAndroidアプリ＆ゲームを本物のAPKファイルに
+• スマート生成：AIが指示どおりにコードを書き、バリデータで検証、テンプレートにフォールバック
+• 返信ごとのトークン情報＋ライブのバックエンドクォータ（メイン画面の帯とここのクォータカード）
+• 破壊的操作には確認ゲート
+• ローカルのチャット履歴＋セッションと記憶はバックエンドに保存
+
+Backend: jawaadalah.pythonanywhere.com
+ソースコード: github.com/jawaadalah/your-agent
+Jawaadalah (J-DEV) 作。</string>
+    <string name="strip_quota">🪙 残りトークン：%1$s / %2$s  •  残りリクエスト：%3$s / %4$s</string>
+    <string name="usage_line">🪙 トークン：%1$s（入力 %2$s • 出力 %3$s）</string>
+    <string name="phase_connect">バックエンドに接続中</string>
+    <string name="phase_thinking">Skeleが考え中</string>
+    <string name="phase_composing">回答を作成中</string>
+    <string name="phase_planning">エージェントが手順を計画中</string>
+    <string name="phase_executing">スキルを実行中</string>
+    <string name="confirm_title">エージェント操作の確認</string>
+    <string name="confirm_msg">エージェントが破壊的操作を実行しようとしています：%1$s。
+まだ実行されていません。続行しますか？</string>
+    <string name="confirm_yes">はい、実行</string>
+    <string name="confirm_no">キャンセル</string>
+    <string name="confirm_cancelled">操作 %1$s はキャンセルされました——何も実行されていません。</string>
+    <string name="done_fallback">（完了）</string>
+    <string name="chat_cleared">チャットをクリアしました。最初から始めましょう。</string>
+    <string name="err_no_net">インターネット接続がないか、サーバーに届きません。端末のネットワークを確認して再試行してください。</string>
+    <string name="err_timeout">サーバーの応答が遅すぎました（タイムアウト）。少し待ってから再送信してください。</string>
+    <string name="err_generic">申し訳ありません、サーバーへの接続に失敗しました：%1$s。ネットワークを確認して再試行してください。</string>
+    <string name="stream_cut">[回答の途中で接続が切れました]</string>
+</resources>

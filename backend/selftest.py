@@ -407,6 +407,15 @@ def test_v11():
         out, is_err = _skills.execute("inti_fullstack", {"nama": "Uji Fullstack", "deskripsi": "uji"}, {"session_id": "t", "llm": None})
         assert not is_err and "fullstack/uji-fullstack" in out, out
         print("OK  v1.0.0+ router langsung APK + skill inti fullstack jalan + n8n terhapus (16 skill)")
+        # Multibahasa: arahan bahasa dari kode aplikasi masuk ke pesan system.
+        import main as _main
+        msgs_es = _main._system_messages("es")
+        assert any("Español" in m.get("content", "") for m in msgs_es), msgs_es
+        msgs_xx = _main._system_messages("xx")
+        assert not any("BAHASA PERCAKAPAN" in m.get("content", "") for m in msgs_xx), msgs_xx
+        r = call("POST", "/chat", {"message": "hello", "session_id": "lang-tes", "lang": "en"})
+        assert r.get("reply"), r
+        print("OK  multibahasa: kode es -> arahan Español, kode tak dikenal diabaikan, /chat menerima lang")
 
     finally:
         proc.terminate()

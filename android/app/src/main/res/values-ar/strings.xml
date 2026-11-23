@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_btn">⚙ الإعدادات</string>
+    <string name="clear_btn">مسح</string>
+    <string name="quota_loading">🪙 الرموز المتبقية: جارٍ التحميل…</string>
+    <string name="input_hint">اكتب رسالة...</string>
+    <string name="exit_desc">الخروج من التطبيق</string>
+    <string name="back_btn">→ رجوع</string>
+    <string name="settings_title">الإعدادات</string>
+    <string name="save_btn">حفظ الإعدادات</string>
+    <string name="exit_app">الخروج من التطبيق</string>
+    <string name="saved_toast">تم حفظ الإعدادات</string>
+    <string name="sec_connection">الاتصال بالخادم</string>
+    <string name="label_backend_url">عنوان الخادم الخلفي</string>
+    <string name="label_app_token">رمز التطبيق (إذا كان الخادم يستخدم APP_TOKEN)</string>
+    <string name="hint_empty">اتركه فارغًا إن لم يوجد</string>
+    <string name="sec_llm">عقل الذكاء الاصطناعي (API)</string>
+    <string name="llm_desc">استخدم مفتاح API الخاص بك مع أي مزوّد متوافق مع OpenAI. اتركه فارغًا لاستخدام إعداد الخادم الافتراضي. يُحفظ المفتاح محليًا على هاتفك ويُرسل مع كل طلب — الخادم لا يخزّنه أبدًا.</string>
+    <string name="label_provider">المزوّد</string>
+    <string name="label_base_url">عنوان API الأساسي</string>
+    <string name="label_model">النموذج</string>
+    <string name="label_api_key">مفتاح API</string>
+    <string name="sec_features">المزايا</string>
+    <string name="switch_agent_default">وضع الوكيل مفعّل منذ البداية</string>
+    <string name="switch_streaming">الإجابات المتدفقة (يظهر النص تدريجيًا)</string>
+    <string name="sec_appearance">المظهر</string>
+    <string name="label_theme">سمة التطبيق</string>
+    <string name="theme_desc">تنطبق السمة على شاشة المحادثة؛ وتُعاد تحميل شاشة المحادثة تلقائيًا عند تغيير السمة.</string>
+    <string name="theme_navy">Premium Navy (داكن)</string>
+    <string name="theme_bright">فاتح</string>
+    <string name="theme_amoled">AMOLED (أسود نقي)</string>
+    <string name="sec_language">اللغة</string>
+    <string name="label_language">لغة التطبيق وإجابات الذكاء الاصطناعي</string>
+    <string name="language_desc">واجهة التطبيق وإجابات Skele تتبع هذا الاختيار.</string>
+    <string name="sec_quota">حصة الخادم وحدوده</string>
+    <string name="quota_loading_text">جارٍ تحميل الحصة من الخادم…</string>
+    <string name="quota_live_note">مباشر — يتحدّث تلقائيًا ما دامت هذه الصفحة مفتوحة، وبعد كل محادثة على الشاشة الرئيسية.</string>
+    <string name="quota_model_active">النموذج النشط: %1$s</string>
+    <string name="quota_not_ready">لم تُقرأ الحصة بعد — يلتقطها الخادم بعد أول طلب ذكاء اصطناعي منذ تشغيله. أرسل رسالة محادثة واحدة أولًا ثم عد إلى هنا.</string>
+    <string name="quota_tokens">🪙 الرموز المتبقية: %1$s / %2$s</string>
+    <string name="quota_requests">📨 الطلبات المتبقية: %1$s / %2$s</string>
+    <string name="quota_reset_tokens">⏳ تُصفّر الرموز خلال: %1$s</string>
+    <string name="quota_reset_requests">⏳ تُصفّر الطلبات خلال: %1$s</string>
+    <string name="quota_failed">فشل تحميل الحصة: %1$s</string>
+    <string name="quota_conn_problem">مشكلة في الاتصال</string>
+    <string name="countdown_now">الآن</string>
+    <string name="sec_about">حول التطبيق</string>
+    <string name="about_text">Your Agent v%1$s — مساعدك الشخصي بالذكاء الاصطناعي مع وضع الوكيل ومصنع APK
+
+المزايا الرئيسية:
+• محادثة متدفقة بعقل ذكاء اصطناعي من اختيارك (BYOK: Groq وOpenRouter وOpenAI وGemini أو خادمك الخاص)
+• وضع الوكيل: 16 مهارة — آلة حاسبة، ملاحظات، ذاكرة طويلة الأمد، جلب الويب، مولّد مشاريع، مصنع APK، مهارة fullstack الأساسية
+• مصنع APK: حوّل تطبيقات وألعاب Android إلى ملفات APK حقيقية من داخل المحادثة
+• المولّد الذكي: تكتب الذكاء الاصطناعي الشيفرة حسب تعليماتك، وتفحصها أدوات تحقق، مع قالب احتياطي
+• معلومات الرموز في كل رد + حصة الخادم مباشرة (شريط في الشاشة الرئيسية وبطاقة الحصة هنا)
+• بوابة تأكيد للإجراءات المدمّرة
+• سجل محادثة محلي + الجلسات والذاكرة محفوظة على الخادم
+
+Backend: jawaadalah.pythonanywhere.com
+الشيفرة المصدرية: github.com/jawaadalah/your-agent
+من صنع Jawaadalah (J-DEV).</string>
+    <string name="strip_quota">🪙 الرموز المتبقية: %1$s / %2$s  •  الطلبات المتبقية: %3$s / %4$s</string>
+    <string name="usage_line">🪙 الرموز: %1$s (داخل %2$s • خارج %3$s)</string>
+    <string name="phase_connect">جارٍ الاتصال بالخادم</string>
+    <string name="phase_thinking">Skele يفكّر</string>
+    <string name="phase_composing">جارٍ صياغة الإجابة</string>
+    <string name="phase_planning">الوكيل يخطط للخطوات</string>
+    <string name="phase_executing">جارٍ تنفيذ المهارة</string>
+    <string name="confirm_title">تأكيد إجراء الوكيل</string>
+    <string name="confirm_msg">يريد الوكيل تنفيذ إجراء مدمّر: %1$s.
+لم يُنفّذ بعد. هل نكمل؟</string>
+    <string name="confirm_yes">نعم، نفّذ</string>
+    <string name="confirm_no">إلغاء</string>
+    <string name="confirm_cancelled">أُلغي الإجراء %1$s — لم يُنفّذ شيء.</string>
+    <string name="done_fallback">(تم)</string>
+    <string name="chat_cleared">تم مسح المحادثة. لنبدأ من جديد.</string>
+    <string name="err_no_net">لا اتصال بالإنترنت أو الخادم غير متاح. تحقق من شبكة هاتفك ثم حاول مجددًا.</string>
+    <string name="err_timeout">استغرق الخادم وقتًا طويلًا للرد (مهلة). حاول الإرسال مجددًا بعد قليل.</string>
+    <string name="err_generic">عذرًا، فشل الاتصال بالخادم: %1$s. تحقق من شبكتك ثم حاول مجددًا.</string>
+    <string name="stream_cut">[انقطع الاتصال في منتصف الإجابة]</string>
+</resources>

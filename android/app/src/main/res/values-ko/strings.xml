@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_btn">⚙ 설정</string>
+    <string name="clear_btn">지우기</string>
+    <string name="quota_loading">🪙 남은 토큰: 불러오는 중…</string>
+    <string name="input_hint">메시지를 입력하세요...</string>
+    <string name="exit_desc">앱 종료</string>
+    <string name="back_btn">← 뒤로</string>
+    <string name="settings_title">설정</string>
+    <string name="save_btn">설정 저장</string>
+    <string name="exit_app">앱 종료</string>
+    <string name="saved_toast">설정이 저장되었습니다</string>
+    <string name="sec_connection">서버 연결</string>
+    <string name="label_backend_url">백엔드 주소</string>
+    <string name="label_app_token">앱 토큰 (백엔드가 APP_TOKEN을 쓸 때)</string>
+    <string name="hint_empty">없으면 비워 두세요</string>
+    <string name="sec_llm">AI 두뇌 (API)</string>
+    <string name="llm_desc">OpenAI 호환 제공자 어디에서든 내 API 키를 쓸 수 있습니다. 비워 두면 서버 기본값을 사용합니다. 키는 휴대폰에만 저장되고 요청마다 전송됩니다 — 서버는 절대 저장하지 않습니다.</string>
+    <string name="label_provider">제공자</string>
+    <string name="label_base_url">API 기본 URL</string>
+    <string name="label_model">모델</string>
+    <string name="label_api_key">API 키</string>
+    <string name="sec_features">기능</string>
+    <string name="switch_agent_default">처음부터 에이전트 모드 켜기</string>
+    <string name="switch_streaming">스트리밍 답변 (글자가 점차 나타남)</string>
+    <string name="sec_appearance">모양</string>
+    <string name="label_theme">앱 테마</string>
+    <string name="theme_desc">테마는 채팅 화면에 적용됩니다. 테마를 바꾸면 채팅 화면이 자동으로 새로고침됩니다.</string>
+    <string name="theme_navy">Premium Navy (다크)</string>
+    <string name="theme_bright">라이트</string>
+    <string name="theme_amoled">AMOLED (완전 검정)</string>
+    <string name="sec_language">언어</string>
+    <string name="label_language">앱 및 AI 답변 언어</string>
+    <string name="language_desc">앱 화면과 Skele의 답변은 이 선택을 따릅니다.</string>
+    <string name="sec_quota">백엔드 할당량 및 한도</string>
+    <string name="quota_loading_text">서버에서 할당량을 불러오는 중…</string>
+    <string name="quota_live_note">실시간 — 이 페이지가 열려 있는 동안 자동 업데이트되고, 메인 화면에서 채팅할 때마다 업데이트됩니다.</string>
+    <string name="quota_model_active">활성 모델: %1$s</string>
+    <string name="quota_not_ready">할당량이 아직 읽히지 않았습니다 — 서버는 시작 후 첫 AI 요청 뒤에 이를 기록합니다. 먼저 채팅 메시지 하나를 보낸 뒤 여기로 돌아오세요.</string>
+    <string name="quota_tokens">🪙 남은 토큰: %1$s / %2$s</string>
+    <string name="quota_requests">📨 남은 요청: %1$s / %2$s</string>
+    <string name="quota_reset_tokens">⏳ 토큰 초기화까지: %1$s</string>
+    <string name="quota_reset_requests">⏳ 요청 초기화까지: %1$s</string>
+    <string name="quota_failed">할당량을 불러오지 못했습니다: %1$s</string>
+    <string name="quota_conn_problem">연결 문제</string>
+    <string name="countdown_now">지금</string>
+    <string name="sec_about">정보</string>
+    <string name="about_text">Your Agent v%1$s — 에이전트 모드와 APK 공장을 갖춘 나만의 AI 비서
+
+주요 기능:
+• 원하는 AI 두뇌로 스트리밍 채팅 (BYOK: Groq, OpenRouter, OpenAI, Gemini 또는 내 서버)
+• 에이전트 모드: 16개 스킬 — 계산기, 메모, 장기 기억, 웹 가져오기, 프로젝트 생성기, APK 공장, 핵심 풀스택 스킬
+• APK 공장: 채팅에서 Android 앱과 게임을 실제 APK 파일로
+• 스마트 생성기: AI가 지시대로 코드를 쓰고 검증기가 검사하며 템플릿으로 대체
+• 답변마다 토큰 정보 + 실시간 백엔드 할당량 (메인 화면 띠와 여기의 할당량 카드)
+• 파괴적 작업에는 확인 절차
+• 로컬 채팅 기록 + 세션과 기억은 백엔드에 저장
+
+Backend: jawaadalah.pythonanywhere.com
+소스 코드: github.com/jawaadalah/your-agent
+Jawaadalah (J-DEV) 제작.</string>
+    <string name="strip_quota">🪙 남은 토큰: %1$s / %2$s  •  남은 요청: %3$s / %4$s</string>
+    <string name="usage_line">🪙 토큰: %1$s (입력 %2$s • 출력 %3$s)</string>
+    <string name="phase_connect">백엔드에 연결 중</string>
+    <string name="phase_thinking">Skele가 생각 중</string>
+    <string name="phase_composing">답변 작성 중</string>
+    <string name="phase_planning">에이전트가 단계를 계획 중</string>
+    <string name="phase_executing">스킬 실행 중</string>
+    <string name="confirm_title">에이전트 작업 확인</string>
+    <string name="confirm_msg">에이전트가 파괴적 작업을 실행하려 합니다: %1$s.
+아직 실행되지 않았습니다. 계속할까요?</string>
+    <string name="confirm_yes">예, 실행</string>
+    <string name="confirm_no">취소</string>
+    <string name="confirm_cancelled">작업 %1$s 취소됨 — 아무것도 실행되지 않았습니다.</string>
+    <string name="done_fallback">(완료)</string>
+    <string name="chat_cleared">채팅이 지워졌습니다. 새로 시작해요.</string>
+    <string name="err_no_net">인터넷 연결이 없거나 서버에 닿지 않습니다. 휴대폰 네트워크를 확인한 뒤 다시 시도하세요.</string>
+    <string name="err_timeout">서버 응답이 너무 오래 걸렸습니다 (시간 초과). 잠시 후 다시 보내 보세요.</string>
+    <string name="err_generic">죄송합니다. 서버 연결에 실패했습니다: %1$s. 네트워크를 확인한 뒤 다시 시도하세요.</string>
+    <string name="stream_cut">[답변 도중 연결이 끊어졌습니다]</string>
+</resources>

@@ -13,6 +13,8 @@ import android.widget.Toast
 import android.os.Handler
 import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -102,7 +104,8 @@ class SettingsActivity : AppCompatActivity() {
                 runOnUiThread {
                     // Live: gagal sesaat tidak menghapus angka terakhir yang tampil.
                     if (::textQuota.isInitialized && lastQuota == null) {
-                        textQuota.text = "Gagal memuat kuota: " + (e.message ?: "koneksi bermasalah")
+                        textQuota.text = getString(R.string.quota_failed,
+                            e.message ?: getString(R.string.quota_conn_problem))
                     }
                 }
             }
@@ -129,7 +132,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun fmtCountdown(deadlineMs: Long): String {
         val sisa = (deadlineMs - android.os.SystemClock.elapsedRealtime() + 999) / 1000
-        if (sisa <= 0) return "sekarang"
+        if (sisa <= 0) return getString(R.string.countdown_now)
         return if (sisa < 60) sisa.toString() + "d"
         else (sisa / 60).toString() + "m " + (sisa % 60).toString() + "d"
     }
@@ -139,20 +142,20 @@ class SettingsActivity : AppCompatActivity() {
         if (!::textQuota.isInitialized) return
         val quota = lastQuota
         textQuota.text = if (quota == null) {
-            "Model aktif: " + lastModel + "\n" +
-                "Sisa kuota belum terbaca — server menangkapnya setelah permintaan AI " +
-                "pertama sejak dinyalakan. Kirim satu pesan chat dulu, lalu kembali ke sini."
+            getString(R.string.quota_model_active, lastModel) + "\n" +
+                getString(R.string.quota_not_ready)
         } else {
-            val fmt = java.text.NumberFormat.getInstance(java.util.Locale("id", "ID"))
+            val fmt = java.text.NumberFormat.getInstance(
+                resources.configuration.locales.get(0))
             fun n(key: String): String {
                 val v = quota.optLong(key, -1)
                 return if (v >= 0) fmt.format(v) else "?"
             }
-            "Model aktif: " + lastModel + "\n" +
-                "🪙 Sisa token: " + n("remaining_tokens") + " / " + n("limit_tokens") + "\n" +
-                "📨 Sisa permintaan: " + n("remaining_requests") + " / " + n("limit_requests") +
-                (if (tokenResetAtMs > 0) "\n⏳ Token di-reset dalam: " + fmtCountdown(tokenResetAtMs) else "") +
-                (if (requestResetAtMs > 0) "\n⏳ Permintaan di-reset dalam: " + fmtCountdown(requestResetAtMs) else "")
+            getString(R.string.quota_model_active, lastModel) + "\n" +
+                getString(R.string.quota_tokens, n("remaining_tokens"), n("limit_tokens")) + "\n" +
+                getString(R.string.quota_requests, n("remaining_requests"), n("limit_requests")) +
+                (if (tokenResetAtMs > 0) "\n" + getString(R.string.quota_reset_tokens, fmtCountdown(tokenResetAtMs)) else "") +
+                (if (requestResetAtMs > 0) "\n" + getString(R.string.quota_reset_requests, fmtCountdown(requestResetAtMs)) else "")
         }
     }
 
@@ -191,11 +194,36 @@ class SettingsActivity : AppCompatActivity() {
         val editModel = findViewById<EditText>(R.id.editLlmModel)
         val editKey = findViewById<EditText>(R.id.editLlmKey)
         val spinnerTheme = findViewById<Spinner>(R.id.spinnerTheme)
-        val themeNames = listOf("Premium Navy (gelap)", "Terang", "AMOLED (hitam pekat)")
+        val themeNames = listOf(getString(R.string.theme_navy), getString(R.string.theme_bright),
+            getString(R.string.theme_amoled))
         val themeAdapter = ArrayAdapter(this, R.layout.spinner_item, themeNames)
         themeAdapter.setDropDownViewResource(R.layout.spinner_dropdown)
         spinnerTheme.adapter = themeAdapter
         spinnerTheme.setSelection(prefs.getInt("tema", 0).coerceIn(0, themeNames.size - 1))
+        val languages = listOf(
+            "Bahasa Indonesia" to "id", "English" to "en", "Español" to "es",
+            "中文" to "zh", "العربية" to "ar", "हिन्दी" to "hi",
+            "Português" to "pt", "Français" to "fr", "Deutsch" to "de",
+            "日本語" to "ja", "한국어" to "ko", "Русский" to "ru")
+        val spinnerLanguage = findViewById<Spinner>(R.id.spinnerLanguage)
+        val langAdapter = ArrayAdapter(this, R.layout.spinner_item, languages.map { it.first })
+        langAdapter.setDropDownViewResource(R.layout.spinner_dropdown)
+        spinnerLanguage.adapter = langAdapter
+        val currentLang = prefs.getString("bahasa", "id") ?: "id"
+        spinnerLanguage.setSelection(
+            languages.indexOfFirst { it.second == currentLang }.coerceAtLeast(0))
+        spinnerLanguage.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
+                val code = languages[pos].second
+                if (code != (prefs.getString("bahasa", "id") ?: "id")) {
+                    prefs.edit().putString("bahasa", code).apply()
+                    AppCompatDelegate.setApplicationLocales(
+                        LocaleListCompat.forLanguageTags(code))
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
         val switchAgentDefault = findViewById<Switch>(R.id.switchAgentDefault)
         val switchStreaming = findViewById<Switch>(R.id.switchStreaming)
 
@@ -233,21 +261,10 @@ class SettingsActivity : AppCompatActivity() {
         }
         textQuota = findViewById(R.id.textQuota)
         loadQuota()
-        findViewById<TextView>(R.id.textAbout).text =
-            "Your Agent v$versionName — asisten AI pribadi dengan Mode Agen dan Pabrik APK.\n\n" +
-                "Fitur utama:\n" +
-                "• Chat streaming dengan otak AI pilihanmu (BYOK: Groq, OpenRouter, OpenAI, Gemini, atau server sendiri)\n" +
-                "• Mode Agen: 16 skill — kalkulator, catatan, ingatan jangka panjang, ambil web, generator proyek, pabrik APK, skill inti fullstack\n" +
-                "• Pabrik APK: buat aplikasi & game Android jadi file APK asli dari chat\n" +
-                "• Generator Cerdas: kode ditulis AI mengikuti instruksimu, dicek validator, fallback template\n" +
-                "• Info token per balasan + sisa kuota backend live (strip di layar utama & kartu Kuota di sini)\n" +
-                "• Gerbang konfirmasi untuk aksi merusak\n" +
-                "• Riwayat chat lokal + sesi & ingatan tersimpan di backend\n\n" +
-                "Backend: jawaadalah.pythonanywhere.com\n" +
-                "Kode sumber: github.com/jawaadalah/your-agent\n" +
-                "Dibuat oleh Jawaadalah (J-DEV)."
+        findViewById<TextView>(R.id.textAbout).text = getString(R.string.about_text, versionName)
 
         findViewById<Button>(R.id.buttonBack).setOnClickListener { finish() }
+        findViewById<Button>(R.id.buttonExitApp).setOnClickListener { finishAffinity() }
         findViewById<Button>(R.id.buttonSaveSettings).setOnClickListener {
             prefs.edit()
                 .putString("backend_url", editBackend.text.toString().trim().trimEnd('/'))
@@ -260,7 +277,7 @@ class SettingsActivity : AppCompatActivity() {
                 .putBoolean("agent_default", switchAgentDefault.isChecked)
                 .putBoolean("streaming", switchStreaming.isChecked)
                 .apply()
-            Toast.makeText(this, "Pengaturan tersimpan", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.saved_toast), Toast.LENGTH_SHORT).show()
             finish()
         }
     }

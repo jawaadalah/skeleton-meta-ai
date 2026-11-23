@@ -23,13 +23,13 @@
                 android:id="@+id/buttonBack"
                 style="@style/Widget.YourAgent.ChipButton"
                 android:background="@drawable/bg_agent_bar"
-                android:text="← Kembali" />
+                android:text="@string/back_btn" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="14dp"
-                android:text="Pengaturan"
+                android:text="@string/settings_title"
                 android:textColor="@color/text_primary"
                 android:textSize="20sp"
                 android:textStyle="bold" />
@@ -41,11 +41,11 @@
 
             <TextView
                 style="@style/Widget.YourAgent.SettingsTitle"
-                android:text="Koneksi Server" />
+                android:text="@string/sec_connection" />
 
             <TextView
                 style="@style/Widget.YourAgent.SettingsLabel"
-                android:text="Alamat backend" />
+                android:text="@string/label_backend_url" />
 
             <EditText
                 android:id="@+id/editBackendUrl"
@@ -55,12 +55,12 @@
 
             <TextView
                 style="@style/Widget.YourAgent.SettingsLabel"
-                android:text="Token aplikasi (bila backend memakai APP_TOKEN)" />
+                android:text="@string/label_app_token" />
 
             <EditText
                 android:id="@+id/editAppToken"
                 style="@style/Widget.YourAgent.SettingsField"
-                android:hint="Kosongkan bila tidak ada"
+                android:hint="@string/hint_empty"
                 android:inputType="textPassword" />
         </LinearLayout>
 
@@ -70,15 +70,15 @@
 
             <TextView
                 style="@style/Widget.YourAgent.SettingsTitle"
-                android:text="Otak AI (API)" />
+                android:text="@string/sec_llm" />
 
             <TextView
                 style="@style/Widget.YourAgent.SettingsHint"
-                android:text="Pakai API key milikmu sendiri untuk provider apa pun yang kompatibel OpenAI. Kosongkan untuk memakai bawaan server. Key tersimpan lokal di HP dan dikirim per permintaan — server tidak menyimpannya." />
+                android:text="@string/llm_desc" />
 
             <TextView
                 style="@style/Widget.YourAgent.SettingsLabel"
-                android:text="Provider" />
+                android:text="@string/label_provider" />
 
             <Spinner
                 android:id="@+id/spinnerProvider"
@@ -89,7 +89,7 @@
 
             <TextView
                 style="@style/Widget.YourAgent.SettingsLabel"
-                android:text="Base URL API" />
+                android:text="@string/label_base_url" />
 
             <EditText
                 android:id="@+id/editLlmBase"
@@ -99,7 +99,7 @@
 
             <TextView
                 style="@style/Widget.YourAgent.SettingsLabel"
-                android:text="Model" />
+                android:text="@string/label_model" />
 
             <EditText
                 android:id="@+id/editLlmModel"
@@ -109,7 +109,7 @@
 
             <TextView
                 style="@style/Widget.YourAgent.SettingsLabel"
-                android:text="API key" />
+                android:text="@string/label_api_key" />
 
             <EditText
                 android:id="@+id/editLlmKey"
@@ -124,7 +124,7 @@
 
             <TextView
                 style="@style/Widget.YourAgent.SettingsTitle"
-                android:text="Fitur" />
+                android:text="@string/sec_features" />
 
             <Switch
                 android:id="@+id/switchAgentDefault"
@@ -132,7 +132,7 @@
                 android:layout_height="wrap_content"
                 android:paddingTop="8dp"
                 android:paddingBottom="8dp"
-                android:text="Mode Agen aktif sejak awal"
+                android:text="@string/switch_agent_default"
                 android:textColor="@color/text_primary"
                 android:textSize="14sp"
                 android:thumbTint="@color/accent_cyan"
@@ -144,7 +144,7 @@
                 android:layout_height="wrap_content"
                 android:paddingTop="8dp"
                 android:paddingBottom="8dp"
-                android:text="Streaming jawaban (teks muncul bertahap)"
+                android:text="@string/switch_streaming"
                 android:textColor="@color/text_primary"
                 android:textSize="14sp"
                 android:thumbTint="@color/accent_cyan"
@@ -158,11 +158,11 @@
 
             <TextView
                 style="@style/Widget.YourAgent.SettingsTitle"
-                android:text="Tampilan" />
+                android:text="@string/sec_appearance" />
 
             <TextView
                 style="@style/Widget.YourAgent.SettingsLabel"
-                android:text="Tema aplikasi" />
+                android:text="@string/label_theme" />
 
             <Spinner
                 android:id="@+id/spinnerTheme"
@@ -173,7 +173,31 @@
 
             <TextView
                 style="@style/Widget.YourAgent.SettingsHint"
-                android:text="Tema berlaku untuk layar chat; layar chat dimuat ulang otomatis saat tema diganti." />
+                android:text="@string/theme_desc" />
+        </LinearLayout>
+
+        <!-- Bahasa -->
+        <LinearLayout
+            style="@style/Widget.YourAgent.SettingsCard">
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsTitle"
+                android:text="@string/sec_language" />
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsLabel"
+                android:text="@string/label_language" />
+
+            <Spinner
+                android:id="@+id/spinnerLanguage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_edit_pill"
+                android:padding="6dp" />
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsHint"
+                android:text="@string/language_desc" />
         </LinearLayout>
 
         <!-- Kuota & Limit Backend -->
@@ -182,7 +206,7 @@
 
             <TextView
                 style="@style/Widget.YourAgent.SettingsTitle"
-                android:text="Kuota &amp; Limit Backend" />
+                android:text="@string/sec_quota" />
 
             <TextView
                 android:id="@+id/textQuota"
@@ -190,13 +214,13 @@
                 android:layout_height="wrap_content"
                 android:paddingTop="6dp"
                 android:lineSpacingMultiplier="1.2"
-                android:text="Memuat kuota dari server…"
+                android:text="@string/quota_loading_text"
                 android:textColor="@color/text_secondary"
                 android:textSize="13.5sp" />
 
             <TextView
                 style="@style/Widget.YourAgent.SettingsHint"
-                android:text="Live — diperbarui otomatis selama halaman ini terbuka, dan setiap selesai mengobrol di layar utama." />
+                android:text="@string/quota_live_note" />
         </LinearLayout>
 
         <!-- Tentang -->
@@ -205,7 +229,7 @@
 
             <TextView
                 style="@style/Widget.YourAgent.SettingsTitle"
-                android:text="Tentang Aplikasi" />
+                android:text="@string/sec_about" />
 
             <TextView
                 android:id="@+id/textAbout"
@@ -223,9 +247,21 @@
             android:layout_height="52dp"
             android:layout_marginTop="6dp"
             android:background="@drawable/btn_send"
-            android:text="Simpan Pengaturan"
+            android:text="@string/save_btn"
             android:textAllCaps="false"
             android:textColor="@color/text_on_gradient"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/buttonExitApp"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_edit_pill"
+            android:text="@string/exit_app"
+            android:textAllCaps="false"
+            android:textColor="#EF4444"
             android:textSize="15sp"
             android:textStyle="bold" />
 

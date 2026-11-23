@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_btn">⚙ सेटिंग्स</string>
+    <string name="clear_btn">साफ़ करें</string>
+    <string name="quota_loading">🪙 शेष टोकन: लोड हो रहा है…</string>
+    <string name="input_hint">संदेश लिखें...</string>
+    <string name="exit_desc">ऐप से बाहर निकलें</string>
+    <string name="back_btn">← वापस</string>
+    <string name="settings_title">सेटिंग्स</string>
+    <string name="save_btn">सेटिंग्स सहेजें</string>
+    <string name="exit_app">ऐप बंद करें</string>
+    <string name="saved_toast">सेटिंग्स सहेजी गईं</string>
+    <string name="sec_connection">सर्वर कनेक्शन</string>
+    <string name="label_backend_url">बैकएंड पता</string>
+    <string name="label_app_token">ऐप टोकन (यदि बैकएंड APP_TOKEN उपयोग करता है)</string>
+    <string name="hint_empty">न हो तो खाली छोड़ें</string>
+    <string name="sec_llm">AI दिमाग (API)</string>
+    <string name="llm_desc">किसी भी OpenAI-संगत प्रदाता के लिए अपनी API कुंजी उपयोग करें। खाली छोड़ने पर सर्वर की डिफ़ॉल्ट कुंजी लगेगी। कुंजी आपके फ़ोन पर ही रहती है और हर अनुरोध के साथ भेजी जाती है — सर्वर उसे कभी संग्रहीत नहीं करता।</string>
+    <string name="label_provider">प्रदाता</string>
+    <string name="label_base_url">API बेस URL</string>
+    <string name="label_model">मॉडल</string>
+    <string name="label_api_key">API कुंजी</string>
+    <string name="sec_features">विशेषताएँ</string>
+    <string name="switch_agent_default">शुरू से ही एजेंट मोड चालू</string>
+    <string name="switch_streaming">स्ट्रीमिंग उत्तर (पाठ धीरे-धीरे दिखता है)</string>
+    <string name="sec_appearance">दिखावट</string>
+    <string name="label_theme">ऐप थीम</string>
+    <string name="theme_desc">थीम चैट स्क्रीन पर लागू होती है; थीम बदलने पर चैट स्क्रीन अपने आप फिर लोड होती है।</string>
+    <string name="theme_navy">Premium Navy (गहरा)</string>
+    <string name="theme_bright">हल्का</string>
+    <string name="theme_amoled">AMOLED (शुद्ध काला)</string>
+    <string name="sec_language">भाषा</string>
+    <string name="label_language">ऐप और AI उत्तरों की भाषा</string>
+    <string name="language_desc">ऐप का इंटरफ़ेस और Skele के उत्तर इसी चुनाव का पालन करेंगे।</string>
+    <string name="sec_quota">बैकएंड कोटा और सीमाएँ</string>
+    <string name="quota_loading_text">सर्वर से कोटा लोड हो रहा है…</string>
+    <string name="quota_live_note">लाइव — यह पेज खुला रहने तक अपने आप अपडेट होता है, और मुख्य स्क्रीन पर हर चैट के बाद भी।</string>
+    <string name="quota_model_active">सक्रिय मॉडल: %1$s</string>
+    <string name="quota_not_ready">कोटा अभी पढ़ा नहीं गया — सर्वर इसे चालू होने के बाद पहले AI अनुरोध पर दर्ज करता है। पहले एक चैट संदेश भेजें, फिर यहाँ लौटें।</string>
+    <string name="quota_tokens">🪙 शेष टोकन: %1$s / %2$s</string>
+    <string name="quota_requests">📨 शेष अनुरोध: %1$s / %2$s</string>
+    <string name="quota_reset_tokens">⏳ टोकन रीसेट होने में: %1$s</string>
+    <string name="quota_reset_requests">⏳ अनुरोध रीसेट होने में: %1$s</string>
+    <string name="quota_failed">कोटा लोड नहीं हुआ: %1$s</string>
+    <string name="quota_conn_problem">कनेक्शन समस्या</string>
+    <string name="countdown_now">अभी</string>
+    <string name="sec_about">ऐप के बारे में</string>
+    <string name="about_text">Your Agent v%1$s — एजेंट मोड और APK फ़ैक्टरी के साथ आपका निजी AI सहायक
+
+मुख्य विशेषताएँ:
+• आपकी पसंद के AI दिमाग के साथ स्ट्रीमिंग चैट (BYOK: Groq, OpenRouter, OpenAI, Gemini या आपका अपना सर्वर)
+• एजेंट मोड: 16 कौशल — कैलकुलेटर, नोट्स, दीर्घकालिक स्मृति, वेब लाना, प्रोजेक्ट जेनरेटर, APK फ़ैक्टरी, कोर fullstack कौशल
+• APK फ़ैक्टरी: चैट से ही Android ऐप और गेम को असली APK फ़ाइलों में बदलें
+• स्मार्ट जेनरेटर: AI आपके निर्देशों के अनुसार कोड लिखता है, सत्यापक जाँचते हैं, टेम्पलेट विकल्प मौजूद
+• हर उत्तर में टोकन जानकारी + लाइव बैकएंड कोटा (मुख्य स्क्रीन की पट्टी और यहाँ कोटा कार्ड)
+• विनाशकारी कार्यों के लिए पुष्टि द्वार
+• स्थानीय चैट इतिहास + सत्र और स्मृति बैकएंड पर संग्रहीत
+
+Backend: jawaadalah.pythonanywhere.com
+स्रोत कोड: github.com/jawaadalah/your-agent
+Jawaadalah (J-DEV) द्वारा निर्मित।</string>
+    <string name="strip_quota">🪙 शेष टोकन: %1$s / %2$s  •  शेष अनुरोध: %3$s / %4$s</string>
+    <string name="usage_line">🪙 टोकन: %1$s (अंदर %2$s • बाहर %3$s)</string>
+    <string name="phase_connect">बैकएंड से संपर्क हो रहा है</string>
+    <string name="phase_thinking">Skele सोच रहा है</string>
+    <string name="phase_composing">उत्तर बनाया जा रहा है</string>
+    <string name="phase_planning">एजेंट कदमों की योजना बना रहा है</string>
+    <string name="phase_executing">कौशल चल रहा है</string>
+    <string name="confirm_title">एजेंट कार्य की पुष्टि</string>
+    <string name="confirm_msg">एजेंट एक विनाशकारी कार्य चलाना चाहता है: %1$s।
+यह अभी चला नहीं है। आगे बढ़ें?</string>
+    <string name="confirm_yes">हाँ, चलाएँ</string>
+    <string name="confirm_no">रद्द करें</string>
+    <string name="confirm_cancelled">कार्य %1$s रद्द — कुछ नहीं चलाया गया।</string>
+    <string name="done_fallback">(हो गया)</string>
+    <string name="chat_cleared">चैट साफ़ हो गई। फिर से शुरू करते हैं।</string>
+    <string name="err_no_net">इंटरनेट कनेक्शन नहीं है या सर्वर तक पहुँच नहीं हो रही। अपने फ़ोन का नेटवर्क जाँचें, फिर फिर कोशिश करें।</string>
+    <string name="err_timeout">सर्वर ने उत्तर देने में बहुत समय लिया (टाइमआउट)। थोड़ी देर बाद फिर भेजकर देखें।</string>
+    <string name="err_generic">क्षमा करें, सर्वर से संपर्क नहीं हुआ: %1$s। अपना नेटवर्क जाँचें, फिर फिर कोशिश करें।</string>
+    <string name="stream_cut">[उत्तर के बीच में कनेक्शन टूट गया]</string>
+</resources>

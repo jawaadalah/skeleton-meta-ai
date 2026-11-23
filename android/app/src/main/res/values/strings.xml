@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Layar utama -->
+    <string name="settings_btn">⚙ Atur</string>
+    <string name="clear_btn">Hapus</string>
+    <string name="quota_loading">🪙 Sisa token: memuat…</string>
+    <string name="input_hint">Tulis pesan...</string>
+    <string name="exit_desc">Keluar dari aplikasi</string>
+
+    <!-- Pengaturan: umum -->
+    <string name="back_btn">← Kembali</string>
+    <string name="settings_title">Pengaturan</string>
+    <string name="save_btn">Simpan Pengaturan</string>
+    <string name="exit_app">Keluar dari Aplikasi</string>
+    <string name="saved_toast">Pengaturan tersimpan</string>
+
+    <!-- Pengaturan: koneksi -->
+    <string name="sec_connection">Koneksi Server</string>
+    <string name="label_backend_url">Alamat backend</string>
+    <string name="label_app_token">Token aplikasi (bila backend memakai APP_TOKEN)</string>
+    <string name="hint_empty">Kosongkan bila tidak ada</string>
+
+    <!-- Pengaturan: otak AI -->
+    <string name="sec_llm">Otak AI (API)</string>
+    <string name="llm_desc">Pakai API key milikmu sendiri untuk provider apa pun yang kompatibel OpenAI. Kosongkan untuk memakai bawaan server. Key tersimpan lokal di HP dan dikirim per permintaan — server tidak menyimpannya.</string>
+    <string name="label_provider">Provider</string>
+    <string name="label_base_url">Base URL API</string>
+    <string name="label_model">Model</string>
+    <string name="label_api_key">API key</string>
+
+    <!-- Pengaturan: fitur -->
+    <string name="sec_features">Fitur</string>
+    <string name="switch_agent_default">Mode Agen aktif sejak awal</string>
+    <string name="switch_streaming">Streaming jawaban (teks muncul bertahap)</string>
+
+    <!-- Pengaturan: tampilan -->
+    <string name="sec_appearance">Tampilan</string>
+    <string name="label_theme">Tema aplikasi</string>
+    <string name="theme_desc">Tema berlaku untuk layar chat; layar chat dimuat ulang otomatis saat tema diganti.</string>
+    <string name="theme_navy">Premium Navy (gelap)</string>
+    <string name="theme_bright">Terang</string>
+    <string name="theme_amoled">AMOLED (hitam pekat)</string>
+
+    <!-- Pengaturan: bahasa -->
+    <string name="sec_language">Bahasa</string>
+    <string name="label_language">Bahasa aplikasi &amp; jawaban AI</string>
+    <string name="language_desc">Antarmuka aplikasi dan bahasa jawaban Skele mengikuti pilihan ini.</string>
+
+    <!-- Pengaturan: kuota -->
+    <string name="sec_quota">Kuota &amp; Limit Backend</string>
+    <string name="quota_loading_text">Memuat kuota dari server…</string>
+    <string name="quota_live_note">Live — diperbarui otomatis selama halaman ini terbuka, dan setiap selesai mengobrol di layar utama.</string>
+    <string name="quota_model_active">Model aktif: %1$s</string>
+    <string name="quota_not_ready">Sisa kuota belum terbaca — server menangkapnya setelah permintaan AI pertama sejak dinyalakan. Kirim satu pesan chat dulu, lalu kembali ke sini.</string>
+    <string name="quota_tokens">🪙 Sisa token: %1$s / %2$s</string>
+    <string name="quota_requests">📨 Sisa permintaan: %1$s / %2$s</string>
+    <string name="quota_reset_tokens">⏳ Token di-reset dalam: %1$s</string>
+    <string name="quota_reset_requests">⏳ Permintaan di-reset dalam: %1$s</string>
+    <string name="quota_failed">Gagal memuat kuota: %1$s</string>
+    <string name="quota_conn_problem">koneksi bermasalah</string>
+    <string name="countdown_now">sekarang</string>
+
+    <!-- Pengaturan: tentang -->
+    <string name="sec_about">Tentang Aplikasi</string>
+    <string name="about_text">Your Agent v%1$s — asisten AI pribadi dengan Mode Agen dan Pabrik APK.\n\nFitur utama:\n• Chat streaming dengan otak AI pilihanmu (BYOK: Groq, OpenRouter, OpenAI, Gemini, atau server sendiri)\n• Mode Agen: 16 skill — kalkulator, catatan, ingatan jangka panjang, ambil web, generator proyek, pabrik APK, skill inti fullstack\n• Pabrik APK: buat aplikasi &amp; game Android jadi file APK asli dari chat\n• Generator Cerdas: kode ditulis AI mengikuti instruksimu, dicek validator, fallback template\n• Info token per balasan + sisa kuota backend live (strip di layar utama &amp; kartu Kuota di sini)\n• Gerbang konfirmasi untuk aksi merusak\n• Riwayat chat lokal + sesi &amp; ingatan tersimpan di backend\n\nBackend: jawaadalah.pythonanywhere.com\nKode sumber: github.com/jawaadalah/your-agent\nDibuat oleh Jawaadalah (J-DEV).</string>
+
+    <!-- Layar utama: dinamis -->
+    <string name="strip_quota">🪙 Sisa token: %1$s / %2$s  •  Sisa permintaan: %3$s / %4$s</string>
+    <string name="usage_line">🪙 Token: %1$s (masuk %2$s • keluar %3$s)</string>
+    <string name="phase_connect">Menghubungi backend</string>
+    <string name="phase_thinking">Skele sedang berpikir</string>
+    <string name="phase_composing">Menyusun jawaban</string>
+    <string name="phase_planning">Agen merencanakan langkah</string>
+    <string name="phase_executing">Menjalankan skill</string>
+
+    <!-- Layar utama: dialog konfirmasi & galat -->
+    <string name="confirm_title">Konfirmasi aksi agen</string>
+    <string name="confirm_msg">Agen ingin menjalankan aksi merusak: %1$s.\nAksi ini belum dijalankan. Setuju?</string>
+    <string name="confirm_yes">Setuju, jalankan</string>
+    <string name="confirm_no">Batal</string>
+    <string name="confirm_cancelled">Aksi %1$s dibatalkan — tidak ada yang dijalankan.</string>
+    <string name="done_fallback">(selesai)</string>
+    <string name="chat_cleared">Chat dibersihkan. Kita mulai dari awal.</string>
+    <string name="err_no_net">Tidak ada koneksi internet atau server tidak terjangkau. Periksa jaringan HP kamu, lalu coba lagi.</string>
+    <string name="err_timeout">Server terlalu lama menjawab (timeout). Coba kirim lagi sebentar.</string>
+    <string name="err_generic">Maaf, gagal menghubungi server: %1$s. Periksa jaringan, lalu coba lagi.</string>
+    <string name="stream_cut">[Koneksi terputus di tengah jawaban]</string>
+</resources>

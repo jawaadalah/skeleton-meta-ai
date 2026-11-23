@@ -100,7 +100,7 @@ def _handle_agent(environ, start_response):
     llm_call = None if bm.MOCK else (lambda msgs: bm.ask_meta(msgs, data.get("llm")))
     try:
         result = bm.agent_mod.run_agent(user_text, effective_session,
-                                        bm._system_messages() + list(history),
+                                        bm._system_messages(data.get("lang")) + list(history),
                                         llm_call, bm.mock_reply)
     except urllib.error.HTTPError as e:
         if e.code == 429:
@@ -145,7 +145,7 @@ def _handle_chat(environ, start_response, streaming):
 
     bm._reset_usage()
     history_len = len(history)
-    messages = bm._system_messages()
+    messages = bm._system_messages(data.get("lang"))
     messages.extend(history[-bm.MAX_HISTORY:])
     messages.append({"role": "user", "content": user_text})
 

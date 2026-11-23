@@ -64,13 +64,20 @@
         <Button
             android:id="@+id/buttonSettings"
             style="@style/Widget.YourAgent.ChipButton"
-            android:text="⚙ Atur" />
+            android:text="@string/settings_btn" />
 
         <Button
             android:id="@+id/buttonClear"
             style="@style/Widget.YourAgent.ChipButton"
             android:layout_marginStart="8dp"
-            android:text="Hapus" />
+            android:text="@string/clear_btn" />
+
+        <Button
+            android:id="@+id/buttonExit"
+            style="@style/Widget.YourAgent.ChipButton"
+            android:layout_marginStart="8dp"
+            android:contentDescription="@string/exit_desc"
+            android:text="⏻" />
     </LinearLayout>
 
     <!-- Area chat -->
@@ -89,7 +96,7 @@
             android:id="@+id/textQuotaLive"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="🪙 Sisa token: memuat…"
+            android:text="@string/quota_loading"
             android:textColor="@color/text_secondary"
             android:textSize="11.5sp" />
     </LinearLayout>
@@ -132,7 +139,7 @@
             android:layout_marginEnd="6dp"
             android:layout_weight="1"
             android:background="@drawable/bg_edit_pill"
-            android:hint="Tulis pesan..."
+            android:hint="@string/input_hint"
             android:imeOptions="actionSend"
             android:inputType="textMultiLine|textCapSentences"
             android:maxLines="4"

@@ -89,14 +89,34 @@ except Exception:
     SOUL_TEXT = ""
 
 
-def _system_messages():
-    """Pesan system untuk LLM: prompt dasar + SOUL.md + ingatan MEMORY.md."""
+# Bahasa percakapan yang didukung aplikasi (kode -> nama untuk instruksi LLM).
+LANG_NAMES = {
+    "id": "Bahasa Indonesia", "en": "English", "es": "Español", "zh": "中文 (Chinese)",
+    "ar": "العربية (Arabic)", "hi": "हिन्दी (Hindi)", "pt": "Português",
+    "fr": "Français", "de": "Deutsch", "ja": "日本語 (Japanese)",
+    "ko": "한국어 (Korean)", "ru": "Русский (Russian)",
+}
+
+
+def _system_messages(lang_code=""):
+    """Pesan system untuk LLM: prompt dasar + SOUL.md + ingatan MEMORY.md.
+
+    Bila aplikasi mengirim kode bahasa yang dikenal, tambahkan arahan agar
+    jawaban memakai bahasa pilihan pengguna (antarmuka aplikasi multibahasa).
+    """
     msgs = []
     prompt = SYSTEM_PROMPT
     if SOUL_TEXT:
         prompt = (prompt + "\n\n" + SOUL_TEXT).strip() if prompt else SOUL_TEXT
     if prompt:
         msgs.append({"role": "system", "content": prompt})
+    nama = LANG_NAMES.get(str(lang_code or "").strip().lower())
+    if nama:
+        msgs.append({"role": "system", "content":
+                     f"BAHASA PERCAKAPAN: Pengguna memilih bahasa {nama} di aplikasi. "
+                     f"Jawab SELALU dalam bahasa {nama}, termasuk penjelasan, "
+                     f"ringkasan hasil skill, dan sapaan. Nama proyek/file boleh "
+                     f"tetap seperti permintaan pengguna."})
     memory = memory_mod.load_text()
     if memory:
         msgs.append({"role": "system",
@@ -377,7 +397,7 @@ class Handler(BaseHTTPRequestHandler):
             history = [m for m in raw if isinstance(m, dict) and "role" in m and "content" in m]
 
         history_len = len(history)
-        messages = _system_messages()
+        messages = _system_messages(data.get("lang"))
         messages.extend(history[-MAX_HISTORY:])
         messages.append({"role": "user", "content": user_text})
 
@@ -422,7 +442,7 @@ class Handler(BaseHTTPRequestHandler):
         session_id = str(data.get("session_id", "")).strip()
         effective_session = session_id or "default"
         history = get_session(session_id) if session_id else []
-        agent_history = _system_messages() + list(history)
+        agent_history = _system_messages(data.get("lang")) + list(history)
 
         confirm_token = str(data.get("confirm_token", "")).strip()
         if confirm_token:

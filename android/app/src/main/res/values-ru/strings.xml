@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_btn">⚙ Настройки</string>
+    <string name="clear_btn">Очистить</string>
+    <string name="quota_loading">🪙 Осталось токенов: загрузка…</string>
+    <string name="input_hint">Введите сообщение...</string>
+    <string name="exit_desc">Выйти из приложения</string>
+    <string name="back_btn">← Назад</string>
+    <string name="settings_title">Настройки</string>
+    <string name="save_btn">Сохранить настройки</string>
+    <string name="exit_app">Выйти из приложения</string>
+    <string name="saved_toast">Настройки сохранены</string>
+    <string name="sec_connection">Подключение к серверу</string>
+    <string name="label_backend_url">Адрес бэкенда</string>
+    <string name="label_app_token">Токен приложения (если бэкенд использует APP_TOKEN)</string>
+    <string name="hint_empty">Оставьте пустым, если нет</string>
+    <string name="sec_llm">Мозг ИИ (API)</string>
+    <string name="llm_desc">Используйте свой API-ключ для любого провайдера, совместимого с OpenAI. Оставьте пустым, чтобы использовать серверный по умолчанию. Ключ хранится локально на телефоне и отправляется с каждым запросом — сервер его никогда не сохраняет.</string>
+    <string name="label_provider">Провайдер</string>
+    <string name="label_base_url">Базовый URL API</string>
+    <string name="label_model">Модель</string>
+    <string name="label_api_key">API-ключ</string>
+    <string name="sec_features">Функции</string>
+    <string name="switch_agent_default">Режим Агента включён с самого начала</string>
+    <string name="switch_streaming">Потоковые ответы (текст появляется постепенно)</string>
+    <string name="sec_appearance">Внешний вид</string>
+    <string name="label_theme">Тема приложения</string>
+    <string name="theme_desc">Тема применяется к экрану чата; экран чата перезагружается автоматически при смене темы.</string>
+    <string name="theme_navy">Premium Navy (тёмная)</string>
+    <string name="theme_bright">Светлая</string>
+    <string name="theme_amoled">AMOLED (чистый чёрный)</string>
+    <string name="sec_language">Язык</string>
+    <string name="label_language">Язык приложения и ответов ИИ</string>
+    <string name="language_desc">Интерфейс приложения и ответы Skele следуют этому выбору.</string>
+    <string name="sec_quota">Квота и лимиты бэкенда</string>
+    <string name="quota_loading_text">Загрузка квоты с сервера…</string>
+    <string name="quota_live_note">В реальном времени — обновляется автоматически, пока эта страница открыта, и после каждого чата на главном экране.</string>
+    <string name="quota_model_active">Активная модель: %1$s</string>
+    <string name="quota_not_ready">Квота ещё не считана — сервер фиксирует её после первого запроса к ИИ с момента запуска. Сначала отправьте сообщение в чат, затем вернитесь сюда.</string>
+    <string name="quota_tokens">🪙 Осталось токенов: %1$s / %2$s</string>
+    <string name="quota_requests">📨 Осталось запросов: %1$s / %2$s</string>
+    <string name="quota_reset_tokens">⏳ Токены сбросятся через: %1$s</string>
+    <string name="quota_reset_requests">⏳ Запросы сбросятся через: %1$s</string>
+    <string name="quota_failed">Не удалось загрузить квоту: %1$s</string>
+    <string name="quota_conn_problem">проблема с соединением</string>
+    <string name="countdown_now">сейчас</string>
+    <string name="sec_about">О приложении</string>
+    <string name="about_text">Your Agent v%1$s — ваш личный ИИ-ассистент с Режимом Агента и Фабрикой APK
+
+Основные функции:
+• Потоковый чат с мозгом ИИ на ваш выбор (BYOK: Groq, OpenRouter, OpenAI, Gemini или свой сервер)
+• Режим Агента: 16 навыков — калькулятор, заметки, долговременная память, загрузка веб-страниц, генератор проектов, фабрика APK, основной fullstack-навык
+• Фабрика APK: превращайте Android-приложения и игры в настоящие APK-файлы прямо из чата
+• Умный Генератор: код пишет ИИ по вашим инструкциям, проверяется валидаторами, есть запасной шаблон
+• Информация о токенах в каждом ответе + живая квота бэкенда (полоса на главном экране и карточка Квоты здесь)
+• Подтверждение для разрушительных действий
+• Локальная история чата + сессии и память хранятся на бэкенде
+
+Backend: jawaadalah.pythonanywhere.com
+Исходный код: github.com/jawaadalah/your-agent
+Создано Jawaadalah (J-DEV).</string>
+    <string name="strip_quota">🪙 Осталось токенов: %1$s / %2$s  •  Осталось запросов: %3$s / %4$s</string>
+    <string name="usage_line">🪙 Токены: %1$s (вход %2$s • выход %3$s)</string>
+    <string name="phase_connect">Связь с бэкендом</string>
+    <string name="phase_thinking">Skele думает</string>
+    <string name="phase_composing">Составление ответа</string>
+    <string name="phase_planning">Агент планирует шаги</string>
+    <string name="phase_executing">Выполнение навыка</string>
+    <string name="confirm_title">Подтверждение действия агента</string>
+    <string name="confirm_msg">Агент хочет выполнить разрушительное действие: %1$s.
+Оно ещё не выполнено. Продолжить?</string>
+    <string name="confirm_yes">Да, выполнить</string>
+    <string name="confirm_no">Отмена</string>
+    <string name="confirm_cancelled">Действие %1$s отменено — ничего не выполнено.</string>
+    <string name="done_fallback">(готово)</string>
+    <string name="chat_cleared">Чат очищен. Начнём сначала.</string>
+    <string name="err_no_net">Нет подключения к интернету или сервер недоступен. Проверьте сеть телефона и попробуйте снова.</string>
+    <string name="err_timeout">Сервер слишком долго отвечал (тайм-аут). Попробуйте отправить ещё раз через минуту.</string>
+    <string name="err_generic">Извините, не удалось связаться с сервером: %1$s. Проверьте сеть и попробуйте снова.</string>
+    <string name="stream_cut">[Соединение оборвалось в середине ответа]</string>
+</resources>
