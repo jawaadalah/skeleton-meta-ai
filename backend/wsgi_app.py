@@ -13,7 +13,27 @@ aliran SSE oleh uWSGI tetapi bisa ter-buffer (jawaban tiba sekaligus di akhir,
 bukan kata-per-kata). Endpoint lain identik dengan server HTTP biasa.
 """
 import json
+import os
+import socket
 import urllib.error
+
+
+def _ensure_pa_proxy():
+    """PythonAnywhere free: worker WSGI tidak mewarisi env proxy konsol,
+    padahal semua trafik keluar wajib lewat proxy.server:3128 (whitelist).
+    Tanpa ini urllib gagal "Tunnel connection failed: 403". Hanya aktif
+    bila host proxy.server bisa di-resolve (khusus PA) dan env belum ada."""
+    if os.environ.get("https_proxy") or os.environ.get("HTTPS_PROXY"):
+        return
+    try:
+        socket.gethostbyname("proxy.server")
+    except OSError:
+        return
+    os.environ["http_proxy"] = "http://proxy.server:3128"
+    os.environ["https_proxy"] = "http://proxy.server:3128"
+
+
+_ensure_pa_proxy()
 
 import main as bm  # backend/main.py — fungsi inti dipakai ulang, server tidak dijalankan
 
