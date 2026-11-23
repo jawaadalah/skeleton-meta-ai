@@ -1,0 +1,25 @@
+# Cadangan build APK Your Agent — TIDAK AKTIF OTOMATIS.
+# Dipakai hanya bila GitHub Actions bermasalah. Dijalankan manual dari
+# dashboard Codemagic (pilih workflow android-debug).
+# Dibuat sebagai draf lokal 23 Nov 2026, belum di-commit — minta persetujuan user dulu.
+# Cocok dengan .github/workflows/android-apk.yml: Java 17, Gradle 8.9,
+# gradle assembleDebug di folder android/ (repo ini tanpa gradlew).
+workflows:
+  android-debug:
+    name: Your Agent Android (debug APK)
+    max_build_duration: 30
+    environment:
+      java: 17
+      android: true
+    scripts:
+      - name: Install Gradle 8.9
+        script: |
+          curl -sL https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle-8.9-bin.zip
+          unzip -q /tmp/gradle-8.9-bin.zip -d /tmp
+          echo "PATH=/tmp/gradle-8.9/bin:$PATH" >> $CM_ENV
+      - name: Build debug APK
+        script: |
+          export PATH=/tmp/gradle-8.9/bin:$PATH
+          cd android && gradle assembleDebug --stacktrace
+    artifacts:
+      - android/app/build/outputs/apk/debug/app-debug.apk

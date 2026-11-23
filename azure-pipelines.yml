@@ -1,0 +1,31 @@
+# Cadangan build APK Your Agent — TIDAK AKTIF OTOMATIS.
+# Dipakai hanya bila GitHub Actions bermasalah. Dijalankan manual dari
+# Azure DevOps (Run pipeline). Dibuat sebagai draf lokal 23 Nov 2026,
+# belum di-commit — minta persetujuan user dulu.
+# Cocok dengan .github/workflows/android-apk.yml: Java 17, Gradle 8.9,
+# gradle assembleDebug di folder android/ (repo ini tanpa gradlew).
+# Free tier Azure Pipelines: 1.800 menit/bln, 1 job hosted paralel.
+trigger: none
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: JavaToolInstaller@0
+    inputs:
+      versionSpec: '17'
+      jdkArchitectureOption: x64
+      jdkSourceOption: PreInstalled
+  - bash: |
+      curl -sL https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle-8.9-bin.zip
+      unzip -q /tmp/gradle-8.9-bin.zip -d /tmp
+      echo "##vso[task.prependpath]/tmp/gradle-8.9/bin"
+    displayName: Install Gradle 8.9
+  - bash: gradle assembleDebug --stacktrace
+    workingDirectory: android
+    displayName: Build debug APK
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: android/app/build/outputs/apk/debug/app-debug.apk
+      ArtifactName: your-agent-debug-apk

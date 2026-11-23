@@ -11,11 +11,27 @@ android {
         applicationId = "com.jawaadalah.youragent"
         minSdk = 24
         targetSdk = 35
-        versionCode = 12
-        versionName = "12.0"
+        versionCode = 13
+        versionName = "12.1"
+    }
+
+    // Tanda tangan debug TETAP (sejak v12.1): keystore yang sama di setiap
+    // build membuat APK bisa dipasang sebagai UPDATE tanpa uninstall dulu.
+    // Ini keystore khusus debug (bukan untuk rilis Play Store).
+    signingConfigs {
+        create("fixedDebug") {
+            storeFile = rootProject.file("debug.p12")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+            storeType = "PKCS12"
+        }
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("fixedDebug")
+        }
         release {
             isMinifyEnabled = false
         }
