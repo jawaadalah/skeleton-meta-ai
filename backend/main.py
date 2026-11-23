@@ -109,12 +109,13 @@ def get_session(session_id):
         return _sessions.setdefault(session_id, [])
 
 
+# UA browser wajib: Cloudflare di depan Groq menolak UA bawaan Python-urllib (403).
 def ask_meta(messages):
     payload = json.dumps({"model": MODEL, "messages": messages}).encode("utf-8")
     req = urllib.request.Request(
         f"{BASE_URL}/chat/completions",
         data=payload,
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {API_KEY}"},
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {API_KEY}", "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"},
         method="POST",
     )
     with urllib.request.urlopen(req, timeout=60) as resp:
@@ -128,7 +129,7 @@ def stream_meta(messages):
     req = urllib.request.Request(
         f"{BASE_URL}/chat/completions",
         data=payload,
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {API_KEY}"},
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {API_KEY}", "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"},
         method="POST",
     )
     with urllib.request.urlopen(req, timeout=120) as resp:
