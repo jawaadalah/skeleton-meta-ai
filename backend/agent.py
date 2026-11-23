@@ -54,6 +54,23 @@ def deterministic_route(message):
             any(w in low for w in ("baca", "lihat", "tampilkan", "apa", "ingat apa")):
         return "baca_memori", {}
 
+    # v8 — pabrik APK: bila ada kata "apk", arahkan ke skill pembuat APK
+    # (bukan sekadar proyek). Pola ini harus dicek sebelum generator biasa.
+    m = re.search(r"cek\s+apk\s+([\w-]+)", low)
+    if m:
+        return "cek_apk", {"slug": m.group(1)}
+    if "apk" in low and "buat" in low:
+        gm = re.search(r"game\s*(?:android\s*)?(.*)", text, flags=re.I)
+        am = re.search(r"(?:aplikasi|app)\s+(?:android\s*)?(.*)", text, flags=re.I)
+        if gm and ("game" in low):
+            nama = re.sub(r"\b(jadi|menjadi|bentuk|file|apk|android|simpel|sederhana)\b", "",
+                          gm.group(1), flags=re.I).strip(" :") or "Game Ketuk Target"
+            return "buat_apk_android", {"nama": nama, "jenis": "game"}
+        if am:
+            nama = re.sub(r"\b(jadi|menjadi|bentuk|file|apk|android|simpel|sederhana)\b", "",
+                          am.group(1), flags=re.I).strip(" :") or "AplikasiKu"
+            return "buat_apk_android", {"nama": nama, "jenis": "aplikasi"}
+
     # v7 — generator proyek (Android / game / web) — nama diambil dari teks asli
     # (bukan lowercase) supaya kapitalisasi judul proyek tetap benar.
     m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?game\s+android\s*(.*)", text, flags=re.I)

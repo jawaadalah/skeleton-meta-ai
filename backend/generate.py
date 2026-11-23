@@ -347,27 +347,30 @@ def _android_files(title, pkg, activity):
     }
 
 
-def android_app(nama, paket="", jenis="dasar"):
-    title = " ".join(str(nama).split())[:60] or "AplikasiKu"
-    slug = slugify(title, "aplikasi")
+def android_project(nama, jenis="aplikasi", paket=""):
+    """Kembalikan (slug, title, pkg, files) proyek Android tanpa menulis ke disk.
+    Dipakai generator lokal dan pabrik APK (v8)."""
+    default_title = "GameKu" if jenis == "game" else "AplikasiKu"
+    title = " ".join(str(nama).split())[:60] or default_title
+    slug = slugify(title, "game" if jenis == "game" else "aplikasi")
     pkg = paket.strip() or f"com.jawaadalah.{slug.replace('-', '')}"
-    pkg = re.sub(r"[^a-z0-9.]", "", pkg.lower()).strip(".") or "com.jawaadalah.app"
-    base = GEN_DIR / "android" / slug
-    files = _android_files(title, pkg, _ACTIVITY_BASIC)
-    written = _write(base, files)
+    fallback_pkg = "com.jawaadalah.game" if jenis == "game" else "com.jawaadalah.app"
+    pkg = re.sub(r"[^a-z0-9.]", "", pkg.lower()).strip(".") or fallback_pkg
+    activity = _ACTIVITY_GAME if jenis == "game" else _ACTIVITY_BASIC
+    return slug, title, pkg, _android_files(title, pkg, activity)
+
+
+def android_app(nama, paket="", jenis="dasar"):
+    slug, title, pkg, files = android_project(nama, "aplikasi", paket)
+    written = _write(GEN_DIR / "android" / slug, files)
     return (f"Proyek aplikasi Android '{title}' dibuat di data/generated/android/{slug}/ "
             f"({len(written)} file, paket {pkg}). Isi: " + ", ".join(written) +
             ". Buka folder itu di Android Studio untuk build, atau push ke GitHub dan build dengan Actions.")
 
 
 def android_game(nama, paket=""):
-    title = " ".join(str(nama).split())[:60] or "GameKu"
-    slug = slugify(title, "game")
-    pkg = paket.strip() or f"com.jawaadalah.{slug.replace('-', '')}"
-    pkg = re.sub(r"[^a-z0-9.]", "", pkg.lower()).strip(".") or "com.jawaadalah.game"
-    base = GEN_DIR / "android" / slug
-    files = _android_files(title, pkg, _ACTIVITY_GAME)
-    written = _write(base, files)
+    slug, title, pkg, files = android_project(nama, "game", paket)
+    written = _write(GEN_DIR / "android" / slug, files)
     return (f"Proyek game Android '{title}' (Ketuk Target: skor + timer 30 detik, Canvas) "
             f"dibuat di data/generated/android/{slug}/ ({len(written)} file, paket {pkg}). "
             "Buka di Android Studio untuk build jadi APK.")

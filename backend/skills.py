@@ -189,6 +189,45 @@ def skill_daftar_hasil(args, ctx):
     return generate_mod.list_generated()
 
 
+# ------------------------------------------------------- pabrik APK (v8) ----
+import apk_factory as factory_mod
+
+
+def skill_buat_apk_android(args, ctx):
+    nama = str(args.get("nama", "")).strip()
+    jenis = str(args.get("jenis", "aplikasi")).strip().lower()
+    if jenis not in ("game", "aplikasi"):
+        jenis = "game" if "game" in str(args.get("nama", "")).lower() else "aplikasi"
+    slug, title, pkg, files = generate_mod.android_project(nama, jenis)
+    generate_mod._write(generate_mod.GEN_DIR / "android" / slug, files)
+    try:
+        info = factory_mod.push_project(slug, title, pkg, files)
+    except RuntimeError as e:
+        if "GITHUB_TOKEN" in str(e):
+            return (f"Proyek '{title}' sudah dibuat, tapi pabrik APK belum aktif: "
+                    "token GitHub belum terpasang di server. Pemilik perlu memasang "
+                    "GITHUB_TOKEN (izin Contents ke repo your-agent) di backend/.env.")
+        return f"Error pabrik APK: {e}"
+    return (f"APK '{title}' sedang dibangun di GitHub Actions (commit {info['commit']}, "
+            f"paket {pkg}). Biasanya selesai 3-6 menit. Link unduh APK (ketuk setelah "
+            f"beberapa menit): {info['apk_url']} — status build: {info['actions_url']}. "
+            f"Untuk mengecek sudah jadi atau belum, kirim: cek apk {slug}")
+
+
+def skill_cek_apk(args, ctx):
+    slug = generate_mod.slugify(str(args.get("slug", "")).strip(), "")
+    if not slug:
+        return "Error: sebutkan nama/slug aplikasinya, contoh: cek apk game-ketuk-target"
+    try:
+        ready = factory_mod.check_apk(slug)
+    except Exception as e:
+        return f"Belum bisa memastikan status APK '{slug}' dari server: {e}"
+    if ready:
+        return f"APK '{slug}' SUDAH JADI dan bisa diunduh: {factory_mod.release_url(slug)}"
+    return (f"APK '{slug}' belum tersedia — build mungkin masih berjalan atau gagal. "
+            f"Cek status build: {factory_mod.actions_url()}")
+
+
 # --------------------------------------------------------------- registry ----
 SKILLS = {
     "kalkulator": {
@@ -255,6 +294,16 @@ SKILLS = {
         "organ": "kaki", "risk": "aman", "params": [],
         "description": "Mendaftar semua proyek yang pernah dibuat skill generator (Android/web).",
         "run": skill_daftar_hasil,
+    },
+    "buat_apk_android": {
+        "organ": "tangan", "risk": "aman", "params": ["nama", "jenis"],
+        "description": "Membuat aplikasi/game Android DAN membangunnya jadi file APK asli lewat GitHub Actions (jenis: game/aplikasi). Pakai saat pengguna meminta APK, bukan sekadar proyek/kode.",
+        "run": skill_buat_apk_android,
+    },
+    "cek_apk": {
+        "organ": "kaki", "risk": "aman", "params": ["slug"],
+        "description": "Mengecek apakah APK hasil pabrik (dari buat_apk_android) sudah jadi dan bisa diunduh.",
+        "run": skill_cek_apk,
     },
 }
 

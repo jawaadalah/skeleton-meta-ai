@@ -154,11 +154,11 @@ def test_v7():
     agent = lambda obj: call("POST", "/agent", obj)
 
     health = call("GET", "/health")
-    assert health["version"] == "7.0" and health["soul"] is True, health
-    assert health["skills"] == 13, health
+    assert health["version"] == "8.0" and health["soul"] is True, health
+    assert health["skills"] == 15, health
     soul = call("GET", "/soul")["soul"]
     assert "Skele" in soul, soul[:100]
-    print("OK  v7 /health: versi 7.0, SOUL.md termuat, 13 skill terdaftar; /soul terbaca")
+    print("OK  v7 /health: versi 8.0, SOUL.md termuat, 15 skill terdaftar; /soul terbaca")
 
     r = agent({"message": "ingat bahwa warna favorit saya biru langit", "session_id": "v7-tes"})
     assert r["steps"][0]["skill"] == "ingat", r
@@ -257,6 +257,17 @@ def test_token_auth():
             proc.kill()
 
 
+def test_v8():
+    """v8: pabrik APK — router 'jadi apk' + skill cek_apk; tanpa token harus ramah."""
+    agent = lambda obj: call("POST", "/agent", obj)
+    r = agent({"message": "buatkan game android Balap Kelereng jadi apk", "session_id": "v8-tes"})
+    assert r["steps"][0]["skill"] == "buat_apk_android", r
+    assert "token GitHub belum terpasang" in r["reply"], r
+    print("OK  v8 router: 'buatkan game android ... jadi apk' -> buat_apk_android (tanpa token: pesan ramah)")
+    r = agent({"message": "cek apk balap-kelereng", "session_id": "v8-tes"})
+    assert r["steps"][0]["skill"] == "cek_apk", r
+    print("OK  v8 router: 'cek apk <slug>' -> cek_apk")
+
 def main():
     proc = subprocess.Popen([sys.executable, str(HERE / "main.py")],
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
@@ -320,6 +331,7 @@ def main():
 
         test_agent()
         test_v7()
+        test_v8()
         test_token_auth()
         test_persistence()
         print("SELFTEST v7 LULUS: chat + streaming + sesi + token + agen/skill + gerbang konfirmasi + persistensi + SOUL/MEMORY + generator proyek jalan.")
