@@ -96,7 +96,7 @@ def _handle_agent(environ, start_response):
         return _json(start_response, 400,
                      {"error": f"pesan terlalu panjang (maks {bm.MAX_CHARS} karakter)"})
 
-    llm_call = None if bm.MOCK else (lambda msgs: bm.ask_meta(msgs))
+    llm_call = None if bm.MOCK else (lambda msgs: bm.ask_meta(msgs, data.get("llm")))
     try:
         result = bm.agent_mod.run_agent(user_text, effective_session,
                                         bm._system_messages() + list(history),
@@ -140,7 +140,7 @@ def _handle_chat(environ, start_response, streaming):
         def gen():
             parts = []
             try:
-                chunks = bm.stream_mock(user_text, history_len) if bm.MOCK else bm.stream_meta(messages)
+                chunks = bm.stream_mock(user_text, history_len) if bm.MOCK else bm.stream_meta(messages, data.get("llm"))
                 for chunk in chunks:
                     parts.append(chunk)
                     yield ("data: " + json.dumps({"chunk": chunk}, ensure_ascii=False) + "\n\n").encode("utf-8")
@@ -162,7 +162,7 @@ def _handle_chat(environ, start_response, streaming):
         reply = bm.mock_reply(user_text, history_len)
     else:
         try:
-            reply = bm.ask_meta(messages)
+            reply = bm.ask_meta(messages, data.get("llm"))
         except urllib.error.HTTPError as e:
             detail = e.read().decode("utf-8", "replace")[:300]
             return _json(start_response, 502, {"error": f"Meta API menjawab {e.code}", "detail": detail})

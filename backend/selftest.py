@@ -329,6 +329,31 @@ def test_v11():
         assert seen.get("auth") == "Bearer kunci-aplikasi", seen
         assert seen.get("model") == "stub-model", seen
         print("OK  v11 override LLM: base_url+model+api_key dari aplikasi dipakai (stub membuktikan), env server tidak dipakai")
+        # Jalur WSGI (yang dipakai PythonAnywhere) juga wajib meneruskan override —
+        # regresi v11: wsgi_app punya handler sendiri dan sempat tertinggal.
+        import io as _io
+        sys.path.insert(0, str(HERE))
+        import main as _bm
+        import wsgi_app as _wsgi
+        old_mock = _bm.MOCK
+        _bm.MOCK = False
+        try:
+            payload = json.dumps({"message": "halo wsgi",
+                                  "llm": {"base_url": "http://127.0.0.1:8899/v1",
+                                          "model": "stub-model",
+                                          "api_key": "kunci-aplikasi"}}).encode()
+            captured = {}
+            def _sr(status, headers):
+                captured["status"] = status
+            body = b"".join(_wsgi.application(
+                {"REQUEST_METHOD": "POST", "PATH_INFO": "/chat",
+                 "CONTENT_LENGTH": str(len(payload)), "wsgi.input": _io.BytesIO(payload)}, _sr))
+            wsgi_resp = json.loads(body.decode())
+            assert "JAWABAN-STUB-11" in wsgi_resp.get("reply", ""), wsgi_resp
+            print("OK  v11 WSGI: override LLM diteruskan wsgi_app (jalur produksi PA)")
+        finally:
+            _bm.MOCK = old_mock
+
     finally:
         proc.terminate()
         stub.shutdown()
