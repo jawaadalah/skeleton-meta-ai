@@ -168,21 +168,48 @@ def skill_hapus_memori(args, ctx):
     return f"{count} fakta di MEMORY.md sudah dihapus. Ingatan jangka panjang kosong lagi."
 
 
+import gen_ai as genai_mod
+
+
+def _ai_activity(args, ctx, nama, jenis):
+    """Kode kustom dari LLM (v10) — None bila mock/gagal validasi."""
+    llm = ctx.get("llm")
+    if not llm:
+        return None
+    deskripsi = str(args.get("deskripsi", "")).strip()
+    slug, title, pkg, _ = generate_mod.android_project(nama, jenis)
+    return genai_mod.custom_activity(llm, title, jenis, deskripsi, pkg)
+
+
 def skill_buat_aplikasi_android(args, ctx):
-    return generate_mod.android_app(str(args.get("nama", "")).strip(),
-                                    str(args.get("paket", "")).strip())
+    nama = str(args.get("nama", "")).strip()
+    custom = _ai_activity(args, ctx, nama, "aplikasi")
+    out = generate_mod.android_app(nama, str(args.get("paket", "")).strip(),
+                                   activity_override=custom)
+    return out + (" Kodenya ditulis AI mengikuti instruksimu." if custom else
+                  " (Template bawaan — AI kustom tidak tersedia/ tidak lolos cek.)")
 
 
 def skill_buat_game_android(args, ctx):
-    return generate_mod.android_game(str(args.get("nama", "")).strip(),
-                                     str(args.get("paket", "")).strip())
+    nama = str(args.get("nama", "")).strip()
+    custom = _ai_activity(args, ctx, nama, "game")
+    out = generate_mod.android_game(nama, str(args.get("paket", "")).strip(),
+                                    activity_override=custom)
+    return out + (" Kodenya ditulis AI mengikuti instruksimu." if custom else
+                  " (Template bawaan — AI kustom tidak tersedia/ tidak lolos cek.)")
 
 
 def skill_buat_halaman_web(args, ctx):
     jenis = str(args.get("jenis", "landing")).strip().lower()
     if jenis not in ("landing", "game", "kalkulator"):
         jenis = "landing"
-    return generate_mod.web_page(str(args.get("nama", "")).strip(), jenis)
+    nama = str(args.get("nama", "")).strip()
+    llm = ctx.get("llm")
+    custom = genai_mod.custom_web(llm, nama, jenis,
+                                  str(args.get("deskripsi", "")).strip()) if llm else None
+    out = generate_mod.web_page(nama, jenis, html_override=custom)
+    return out + (" Kodenya ditulis AI mengikuti instruksimu." if custom else
+                  " (Template bawaan — AI kustom tidak tersedia/ tidak lolos cek.)")
 
 
 def skill_daftar_hasil(args, ctx):
@@ -198,7 +225,9 @@ def skill_buat_apk_android(args, ctx):
     jenis = str(args.get("jenis", "aplikasi")).strip().lower()
     if jenis not in ("game", "aplikasi"):
         jenis = "game" if "game" in str(args.get("nama", "")).lower() else "aplikasi"
-    slug, title, pkg, files = generate_mod.android_project(nama, jenis)
+    custom = _ai_activity(args, ctx, nama, jenis)
+    slug, title, pkg, files = generate_mod.android_project(
+        nama, jenis, activity_override=custom)
     generate_mod._write(generate_mod.GEN_DIR / "android" / slug, files)
     try:
         info = factory_mod.push_project(slug, title, pkg, files)
@@ -208,7 +237,9 @@ def skill_buat_apk_android(args, ctx):
                     "token GitHub belum terpasang di server. Pemilik perlu memasang "
                     "GITHUB_TOKEN (izin Contents ke repo your-agent) di backend/.env.")
         return f"Error pabrik APK: {e}"
-    return (f"APK '{title}' sedang dibangun di GitHub Actions (commit {info['commit']}, "
+    return ((f"Kode '{title}' ditulis AI mengikuti instruksimu. " if custom else
+             f"'{title}' memakai template bawaan (AI kustom tidak lolos cek). ") +
+            f"APK '{title}' sedang dibangun di GitHub Actions (commit {info['commit']}, "
             f"paket {pkg}). Biasanya selesai 3-6 menit. Link unduh APK (ketuk setelah "
             f"beberapa menit): {info['apk_url']} — status build: {info['actions_url']}. "
             f"Untuk mengecek sudah jadi atau belum, kirim: cek apk {slug}")
@@ -281,7 +312,7 @@ SKILLS = {
         "run": skill_buat_aplikasi_android,
     },
     "buat_game_android": {
-        "organ": "tangan", "risk": "aman", "params": ["nama", "paket"],
+        "organ": "tangan", "risk": "aman", "params": ["nama", "paket", "deskripsi"],
         "description": "Membuat proyek game Android Kotlin (Canvas 'Ketuk Target': skor + timer) lengkap, siap build di Android Studio.",
         "run": skill_buat_game_android,
     },
@@ -296,7 +327,7 @@ SKILLS = {
         "run": skill_daftar_hasil,
     },
     "buat_apk_android": {
-        "organ": "tangan", "risk": "aman", "params": ["nama", "jenis"],
+        "organ": "tangan", "risk": "aman", "params": ["nama", "jenis", "deskripsi"],
         "description": "Membuat aplikasi/game Android DAN membangunnya jadi file APK asli lewat GitHub Actions (jenis: game/aplikasi). Pakai saat pengguna meminta APK, bukan sekadar proyek/kode.",
         "run": skill_buat_apk_android,
     },

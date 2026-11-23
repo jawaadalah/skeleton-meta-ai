@@ -65,21 +65,21 @@ def deterministic_route(message):
         if gm and ("game" in low):
             nama = re.sub(r"\b(jadi|menjadi|bentuk|file|apk|android|simpel|sederhana)\b", "",
                           gm.group(1), flags=re.I).strip(" :") or "Game Ketuk Target"
-            return "buat_apk_android", {"nama": nama, "jenis": "game"}
+            return "buat_apk_android", {"nama": nama, "jenis": "game", "deskripsi": text}
         if am:
             nama = re.sub(r"\b(jadi|menjadi|bentuk|file|apk|android|simpel|sederhana)\b", "",
                           am.group(1), flags=re.I).strip(" :") or "AplikasiKu"
-            return "buat_apk_android", {"nama": nama, "jenis": "aplikasi"}
+            return "buat_apk_android", {"nama": nama, "jenis": "aplikasi", "deskripsi": text}
 
     # v7 — generator proyek (Android / game / web) — nama diambil dari teks asli
     # (bukan lowercase) supaya kapitalisasi judul proyek tetap benar.
     m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?game\s+android\s*(.*)", text, flags=re.I)
     if m:
-        return "buat_game_android", {"nama": m.group(1).strip(" :") or "Game Ketuk Target"}
+        return "buat_game_android", {"nama": m.group(1).strip(" :") or "Game Ketuk Target", "deskripsi": text}
 
     m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?(?:aplikasi|app)\s+android\s*(.*)", text, flags=re.I)
     if m:
-        return "buat_aplikasi_android", {"nama": m.group(1).strip(" :") or "AplikasiKu"}
+        return "buat_aplikasi_android", {"nama": m.group(1).strip(" :") or "AplikasiKu", "deskripsi": text}
 
     m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?(?:halaman\s+web|website|situs\s+web|web)\s*(.*)", text, flags=re.I)
     if m:
@@ -87,7 +87,7 @@ def deterministic_route(message):
         rest_low = rest.lower()
         jenis = "game" if "game" in rest_low else ("kalkulator" if "kalkulator" in rest_low else "landing")
         nama = re.sub(r"^(game|kalkulator)\s+", "", rest, flags=re.I).strip() or "Halamanku"
-        return "buat_halaman_web", {"nama": nama, "jenis": jenis}
+        return "buat_halaman_web", {"nama": nama, "jenis": jenis, "deskripsi": text}
 
     if any(w in low for w in ("daftar proyek", "proyek yang sudah dibuat",
                                "hasil generate", "daftar hasil")):
@@ -98,11 +98,11 @@ def deterministic_route(message):
     m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?(?:aplikasi\s+)?game\s*(.*)", text, flags=re.I)
     if m:
         nama = re.sub(r"\b(simpel|sederhana|simple)\b", "", m.group(1), flags=re.I).strip(" :")
-        return "buat_game_android", {"nama": nama or "Game Ketuk Target"}
+        return "buat_game_android", {"nama": nama or "Game Ketuk Target", "deskripsi": text}
 
     m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?aplikasi\s+(.+)", text, flags=re.I)
     if m:
-        return "buat_aplikasi_android", {"nama": m.group(1).strip(" :")}
+        return "buat_aplikasi_android", {"nama": m.group(1).strip(" :"), "deskripsi": text}
 
     if low.startswith(("catat:", "catat ", "simpan catatan")):
         teks = re.sub(r"^(catat[: ]+|simpan catatan[: ]+)", "", text, flags=re.I).strip()
@@ -162,7 +162,7 @@ def run_agent(message, session_id, history, llm_call, mock_reply_fn):
     llm_call(messages) -> teks, atau None bila mode mock.
     Mengembalikan dict: {reply, steps, needs_confirmation?, confirm_token?, proposed?}
     """
-    ctx = {"session_id": session_id}
+    ctx = {"session_id": session_id, "llm": llm_call}
     steps = []
 
     routed = deterministic_route(message)
@@ -237,6 +237,7 @@ def _ask_plan(llm_call, convo, steps):
         "Balas HANYA dengan JSON salah satu bentuk:\n"
         '{"action": "answer", "reply": "jawaban final untuk pengguna"}\n'
         '{"action": "skill", "skill": "nama_skill", "args": {"param": "nilai"}}\n'
+        "Untuk skill generator (buat_aplikasi_android, buat_game_android, buat_halaman_web, buat_apk_android), selalu isi param deskripsi dengan instruksi lengkap pengguna agar hasilnya disesuaikan AI mengikuti instruksinya."
         "Jangan tulis teks lain di luar JSON."
     )
     try:

@@ -390,7 +390,7 @@ def _android_files(title, pkg, activity):
     }
 
 
-def android_project(nama, jenis="aplikasi", paket=""):
+def android_project(nama, jenis="aplikasi", paket="", activity_override=None):
     """Kembalikan (slug, title, pkg, files) proyek Android tanpa menulis ke disk.
     Dipakai generator lokal dan pabrik APK (v8)."""
     default_title = "GameKu" if jenis == "game" else "AplikasiKu"
@@ -400,32 +400,36 @@ def android_project(nama, jenis="aplikasi", paket=""):
     fallback_pkg = "com.jawaadalah.game" if jenis == "game" else "com.jawaadalah.app"
     pkg = re.sub(r"[^a-z0-9.]", "", pkg.lower()).strip(".") or fallback_pkg
     activity = _ACTIVITY_GAME if jenis == "game" else _ACTIVITY_BASIC
-    return slug, title, pkg, _android_files(title, pkg, activity)
+    files = _android_files(title, pkg, activity)
+    if activity_override:
+        key = next(k for k in files if k.endswith("MainActivity.kt"))
+        files[key] = activity_override
+    return slug, title, pkg, files
 
 
-def android_app(nama, paket="", jenis="dasar"):
-    slug, title, pkg, files = android_project(nama, "aplikasi", paket)
+def android_app(nama, paket="", jenis="dasar", activity_override=None):
+    slug, title, pkg, files = android_project(nama, "aplikasi", paket, activity_override)
     written = _write(GEN_DIR / "android" / slug, files)
     return (f"Proyek aplikasi Android '{title}' dibuat di data/generated/android/{slug}/ "
             f"({len(written)} file, paket {pkg}). Isi: " + ", ".join(written) +
             ". Buka folder itu di Android Studio untuk build, atau push ke GitHub dan build dengan Actions.")
 
 
-def android_game(nama, paket=""):
-    slug, title, pkg, files = android_project(nama, "game", paket)
+def android_game(nama, paket="", activity_override=None):
+    slug, title, pkg, files = android_project(nama, "game", paket, activity_override)
     written = _write(GEN_DIR / "android" / slug, files)
     return (f"Proyek game Android '{title}' (Ketuk Target: skor + timer 30 detik, Canvas) "
             f"dibuat di data/generated/android/{slug}/ ({len(written)} file, paket {pkg}). "
             "Buka di Android Studio untuk build jadi APK.")
 
 
-def web_page(nama, jenis="landing"):
+def web_page(nama, jenis="landing", html_override=None):
     title = " ".join(str(nama).split())[:60] or "Halamanku"
     slug = slugify(title, "web")
     template = {"landing": _WEB_LANDING, "game": _WEB_GAME,
                 "kalkulator": _WEB_CALC}.get(jenis, _WEB_LANDING)
     base = GEN_DIR / "web" / slug
-    _write(base, {"index.html": template % {"title": title}})
+    _write(base, {"index.html": html_override or template % {"title": title}})
     return (f"Halaman web '{title}' (jenis: {jenis}) dibuat di data/generated/web/{slug}/index.html "
             "— satu file utuh, buka langsung di browser atau hosting di mana saja.")
 

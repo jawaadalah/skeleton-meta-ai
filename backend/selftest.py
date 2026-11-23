@@ -154,11 +154,11 @@ def test_v7():
     agent = lambda obj: call("POST", "/agent", obj)
 
     health = call("GET", "/health")
-    assert health["version"] == "9.0" and health["soul"] is True, health
+    assert health["version"] == "10.0" and health["soul"] is True, health
     assert health["skills"] == 15, health
     soul = call("GET", "/soul")["soul"]
     assert "Skele" in soul, soul[:100]
-    print("OK  v7 /health: versi 9.0, SOUL.md termuat, 15 skill terdaftar; /soul terbaca")
+    print("OK  v7 /health: versi 10.0, SOUL.md termuat, 15 skill terdaftar; /soul terbaca")
 
     r = agent({"message": "ingat bahwa warna favorit saya biru langit", "session_id": "v7-tes"})
     assert r["steps"][0]["skill"] == "ingat", r
