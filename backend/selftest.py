@@ -154,11 +154,11 @@ def test_v7():
     agent = lambda obj: call("POST", "/agent", obj)
 
     health = call("GET", "/health")
-    assert health["version"] == "11.1" and health["soul"] is True, health
+    assert health["version"] == "11.2" and health["soul"] is True, health
     assert health["skills"] == 16, health
     soul = call("GET", "/soul")["soul"]
     assert "Skele" in soul, soul[:100]
-    print("OK  v7 /health: versi 11.1, SOUL.md termuat, 16 skill terdaftar; /soul terbaca")
+    print("OK  v7 /health: versi 11.2, SOUL.md termuat, 16 skill terdaftar; /soul terbaca")
 
     r = agent({"message": "ingat bahwa warna favorit saya biru langit", "session_id": "v7-tes"})
     assert r["steps"][0]["skill"] == "ingat", r
@@ -294,7 +294,8 @@ def test_v11():
                 return
             seen["auth"] = self.headers.get("Authorization", "")
             seen["model"] = body.get("model", "")
-            out = {"choices": [{"message": {"content": "JAWABAN-STUB-11"}}]}
+            out = {"choices": [{"message": {"content": "JAWABAN-STUB-11"}}],
+                   "usage": {"prompt_tokens": 11, "completion_tokens": 7, "total_tokens": 18}}
             raw = json.dumps(out).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -341,6 +342,8 @@ def test_v11():
         assert Stub.hits >= 2, "retry 429 tidak terjadi"
         assert seen.get("auth") == "Bearer kunci-aplikasi", seen
         assert seen.get("model") == "stub-model", seen
+        assert resp.get("usage", {}).get("total_tokens") == 18, resp
+        print("OK  v11.2 info token: usage dari API diteruskan ke respons (total 18)")
         print("OK  v11 override LLM: base_url+model+api_key dari aplikasi dipakai (stub membuktikan), env server tidak dipakai")
         # Jalur WSGI (yang dipakai PythonAnywhere) juga wajib meneruskan override —
         # regresi v11: wsgi_app punya handler sendiri dan sempat tertinggal.
@@ -363,6 +366,7 @@ def test_v11():
                  "CONTENT_LENGTH": str(len(payload)), "wsgi.input": _io.BytesIO(payload)}, _sr))
             wsgi_resp = json.loads(body.decode())
             assert "JAWABAN-STUB-11" in wsgi_resp.get("reply", ""), wsgi_resp
+            assert wsgi_resp.get("usage", {}).get("total_tokens") == 18, wsgi_resp
             print("OK  v11 WSGI: override LLM diteruskan wsgi_app (jalur produksi PA)")
         finally:
             _bm.MOCK = old_mock

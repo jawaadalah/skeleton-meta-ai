@@ -96,6 +96,7 @@ def _handle_agent(environ, start_response):
         return _json(start_response, 400,
                      {"error": f"pesan terlalu panjang (maks {bm.MAX_CHARS} karakter)"})
 
+    bm._reset_usage()
     llm_call = None if bm.MOCK else (lambda msgs: bm.ask_meta(msgs, data.get("llm")))
     try:
         result = bm.agent_mod.run_agent(user_text, effective_session,
@@ -112,6 +113,9 @@ def _handle_agent(environ, start_response):
     if not result.get("needs_confirmation"):
         _remember(session_id, history, user_text, result.get("reply", ""))
     result.update({"mode": "mock" if bm.MOCK else "live", "version": bm.VERSION})
+    usage = bm._get_usage()
+    if usage:
+        result["usage"] = usage
     return _json(start_response, 200, result)
 
 
@@ -136,6 +140,7 @@ def _handle_chat(environ, start_response, streaming):
         raw = data.get("history") or []
         history = [m for m in raw if isinstance(m, dict) and "role" in m and "content" in m]
 
+    bm._reset_usage()
     history_len = len(history)
     messages = bm._system_messages()
     messages.extend(history[-bm.MAX_HISTORY:])
@@ -154,8 +159,12 @@ def _handle_chat(environ, start_response, streaming):
                                                "detail": str(e)[:300]}, ensure_ascii=False) + "\n\n").encode("utf-8")
                 return
             _remember(session_id, history, user_text, "".join(parts))
-            yield ("data: " + json.dumps({"done": True, "mode": "mock" if bm.MOCK else "live",
-                                           "version": bm.VERSION}, ensure_ascii=False) + "\n\n").encode("utf-8")
+            done_obj = {"done": True, "mode": "mock" if bm.MOCK else "live",
+                        "version": bm.VERSION}
+            usage = bm._get_usage()
+            if usage:
+                done_obj["usage"] = usage
+            yield ("data: " + json.dumps(done_obj, ensure_ascii=False) + "\n\n").encode("utf-8")
         start_response("200 OK", [
             ("Content-Type", "text/event-stream; charset=utf-8"),
             ("Cache-Control", "no-cache"),
@@ -178,8 +187,11 @@ def _handle_chat(environ, start_response, streaming):
             return _json(start_response, 502, {"error": "gagal menghubungi Meta API", "detail": str(e)[:300]})
 
     _remember(session_id, history, user_text, reply)
-    return _json(start_response, 200, {"reply": reply, "mode": "mock" if bm.MOCK else "live",
-                                       "version": bm.VERSION})
+    out = {"reply": reply, "mode": "mock" if bm.MOCK else "live", "version": bm.VERSION}
+    usage = bm._get_usage()
+    if usage:
+        out["usage"] = usage
+    return _json(start_response, 200, out)
 
 
 def application(environ, start_response):

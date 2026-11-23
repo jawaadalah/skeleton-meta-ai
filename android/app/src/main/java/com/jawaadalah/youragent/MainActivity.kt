@@ -31,6 +31,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import org.json.JSONArray
 import org.json.JSONObject
+import java.text.NumberFormat
+import java.util.Locale
 import java.net.HttpURLConnection
 import java.net.SocketTimeoutException
 import java.net.URL
@@ -177,6 +179,18 @@ class MainActivity : AppCompatActivity() {
     }
 
 
+    /** Baris info token dari field usage backend (v12.5). "" bila tak ada. */
+    private fun tokenLine(usage: JSONObject?): String {
+        if (usage == null) return ""
+        val total = usage.optInt("total_tokens", 0)
+        if (total <= 0) return ""
+        val fmt = NumberFormat.getInstance(Locale("id", "ID"))
+        val masuk = usage.optInt("prompt_tokens", 0)
+        val keluar = usage.optInt("completion_tokens", 0)
+        return "\n\n🪙 Token: " + fmt.format(total) +
+            " (masuk " + fmt.format(masuk) + " • keluar " + fmt.format(keluar) + ")"
+    }
+
     /** Objek "llm" untuk body request (v11): override otak AI dari Pengaturan.
      *  null bila semua kosong (pakai bawaan server). */
     private fun llmOverrideJson(): JSONObject? {
@@ -198,6 +212,7 @@ class MainActivity : AppCompatActivity() {
         val bubble = addBubble("", fromUser = false, save = false)
         startProcessLog(bubble, listOf("Menghubungi backend", "Skele sedang berpikir", "Menyusun jawaban"))
         executor.execute {
+            var usageObj: JSONObject? = null
             val display = try {
                 val body = JSONObject().put("message", text).put("session_id", sessionId)
                 llmOverrideJson()?.let { body.put("llm", it) }
@@ -215,14 +230,16 @@ class MainActivity : AppCompatActivity() {
                 if (conn.responseCode !in 200..299) {
                     throw IllegalStateException("Backend ${conn.responseCode}: ${json.optString("error", response)}")
                 }
+                usageObj = json.optJSONObject("usage")
                 json.optString("reply", "(jawaban kosong dari backend)")
             } catch (e: Exception) {
                 friendlyError(e)
             }
+            val shownText = display + tokenLine(usageObj)
             runOnUiThread {
                 stopProcessLog()
-                setBubbleFormatted(bubble, display)
-                shown.add(false to display)
+                setBubbleFormatted(bubble, shownText)
+                shown.add(false to shownText)
                 saveChat()
                 setBusy(false)
                 scrollChat.post { scrollChat.fullScroll(ScrollView.FOCUS_DOWN) }
@@ -328,8 +345,9 @@ class MainActivity : AppCompatActivity() {
 
         executor.execute {
             val full = StringBuilder()
+            var streamUsage: JSONObject? = null
             try {
-                streamChat(text) { chunk ->
+                streamUsage = streamChat(text) { chunk ->
                     if (full.isEmpty()) runOnUiThread { stopTyping() }
                     full.append(chunk)
                     runOnUiThread {
@@ -341,10 +359,11 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 if (full.isEmpty()) full.append(friendlyError(e)) else full.append("\n[Koneksi terputus di tengah jawaban]")
             }
+            val finalText = full.toString() + tokenLine(streamUsage)
             runOnUiThread {
                 stopTyping()
-                setBubbleFormatted(bubble, full.toString())
-                shown.add(false to full.toString())
+                setBubbleFormatted(bubble, finalText)
+                shown.add(false to finalText)
                 saveChat()
                 setBusy(false)
                 scrollChat.post { scrollChat.fullScroll(ScrollView.FOCUS_DOWN) }
@@ -359,7 +378,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     /** POST /chat/stream — baca SSE: data {"chunk"} / {"done"} / {"error"}. */
-    private fun streamChat(text: String, onChunk: (String) -> Unit) {
+    private fun streamChat(text: String, onChunk: (String) -> Unit): JSONObject? {
         val bodyObj = JSONObject().put("message", text).put("session_id", sessionId)
         llmOverrideJson()?.let { bodyObj.put("llm", it) }
         val body = bodyObj.toString()
@@ -378,6 +397,7 @@ class MainActivity : AppCompatActivity() {
             throw IllegalStateException("Backend menjawab ${conn.responseCode}: $msg")
         }
 
+        var usageFound: JSONObject? = null
         conn.inputStream.bufferedReader().useLines { lines ->
             for (line in lines) {
                 val trimmed = line.trim()
@@ -386,10 +406,11 @@ class MainActivity : AppCompatActivity() {
                 when {
                     event.has("chunk") -> onChunk(event.getString("chunk"))
                     event.has("error") -> throw IllegalStateException(event.getString("error"))
-                    event.optBoolean("done") -> return
+                    event.optBoolean("done") -> usageFound = event.optJSONObject("usage")
                 }
             }
         }
+        return usageFound
     }
 
     // ------------------------------------------------------------- Mode Agen --
@@ -412,6 +433,7 @@ class MainActivity : AppCompatActivity() {
                     val names = (0 until steps.length()).map { steps.getJSONObject(it).optString("skill") }
                     display += "\n\n— Log proses:\n" + names.joinToString("\n") { "✓ " + it + " — selesai" }
                 }
+                json.optJSONObject("usage")?.let { display += tokenLine(it) }
                 if (json.optBoolean("needs_confirmation")) {
                     confirmToken = json.optString("confirm_token")
                     proposed = json.optJSONObject("proposed")?.optString("skill") ?: "aksi agen"
@@ -423,8 +445,8 @@ class MainActivity : AppCompatActivity() {
             val skillName = proposed
             runOnUiThread {
                 stopProcessLog()
-                setBubbleFormatted(bubble, display)
-                shown.add(false to display)
+                setBubbleFormatted(bubble, shownText)
+                shown.add(false to shownText)
                 saveChat()
                 setBusy(false)
                 scrollChat.post { scrollChat.fullScroll(ScrollView.FOCUS_DOWN) }

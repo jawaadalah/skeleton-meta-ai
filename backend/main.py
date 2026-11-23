@@ -49,7 +49,7 @@ import memory_store as memory_mod
 import skills as skills_mod
 import store as store_mod
 
-VERSION = "11.1"
+VERSION = "11.2"
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -110,6 +110,36 @@ def get_session(session_id):
 
 
 
+import threading as _threading
+
+_usage_local = _threading.local()
+
+
+def _reset_usage():
+    _usage_local.data = {"prompt_tokens": 0, "completion_tokens": 0,
+                         "total_tokens": 0, "calls": 0}
+
+
+def _add_usage(u):
+    if not isinstance(u, dict):
+        return
+    d = getattr(_usage_local, "data", None)
+    if d is None:
+        _reset_usage()
+        d = _usage_local.data
+    d["prompt_tokens"] += int(u.get("prompt_tokens") or 0)
+    d["completion_tokens"] += int(u.get("completion_tokens") or 0)
+    d["total_tokens"] += int(u.get("total_tokens") or 0)
+    d["calls"] += 1
+
+
+def _get_usage():
+    d = getattr(_usage_local, "data", None)
+    if not d or not d.get("calls"):
+        return None
+    return dict(d)
+
+
 def _llm_cfg(override=None):
     """Konfigurasi LLM efektif (v11): override per-request dari aplikasi
     (base_url/model/api_key gaya OpenAI-compatible) menang atas env server.
@@ -150,6 +180,7 @@ def ask_meta(messages, override=None):
         try:
             with urllib.request.urlopen(req, timeout=60) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
+            _add_usage(data.get("usage"))
             return data["choices"][0]["message"]["content"]
         except Exception as e:  # noqa: BLE001 - retry hanya untuk 429/5xx
             last_err = e
@@ -161,7 +192,8 @@ def ask_meta(messages, override=None):
 def stream_meta(messages, override=None):
     """Yield potongan teks dari API gaya OpenAI dengan stream=true (SSE hulu)."""
     cfg = _llm_cfg(override)
-    payload = json.dumps({"model": cfg["model"], "messages": messages, "stream": True}).encode("utf-8")
+    payload = json.dumps({"model": cfg["model"], "messages": messages, "stream": True,
+                          "stream_options": {"include_usage": True}}).encode("utf-8")
     req = urllib.request.Request(
         f"{cfg['base_url']}/chat/completions",
         data=payload,
@@ -192,6 +224,8 @@ def stream_meta(messages, override=None):
                 break
             try:
                 obj = json.loads(data)
+                if obj.get("usage"):
+                    _add_usage(obj["usage"])
                 chunk = obj["choices"][0].get("delta", {}).get("content", "")
             except (ValueError, KeyError, IndexError):
                 continue
@@ -313,6 +347,7 @@ class Handler(BaseHTTPRequestHandler):
             self._stream(user_text, messages, history, session_id, history_len, data.get("llm"))
             return
 
+        _reset_usage()
         if MOCK:
             reply = mock_reply(user_text, history_len)
         else:
@@ -331,7 +366,11 @@ class Handler(BaseHTTPRequestHandler):
                 return
 
         self._remember(session_id, history, user_text, reply)
-        self._json(200, {"reply": reply, "mode": "mock" if MOCK else "live", "version": VERSION})
+        out = {"reply": reply, "mode": "mock" if MOCK else "live", "version": VERSION}
+        usage = _get_usage()
+        if usage:
+            out["usage"] = usage
+        self._json(200, out)
 
     def _handle_agent(self):
         try:
@@ -364,6 +403,7 @@ class Handler(BaseHTTPRequestHandler):
             self._json(400, {"error": f"pesan terlalu panjang (maks {MAX_CHARS} karakter)"})
             return
 
+        _reset_usage()
         llm_call = None if MOCK else (lambda msgs: ask_meta(msgs, data.get("llm")))
         try:
             result = agent_mod.run_agent(user_text, effective_session, agent_history,
@@ -382,6 +422,9 @@ class Handler(BaseHTTPRequestHandler):
         if not result.get("needs_confirmation"):
             self._remember(session_id, history, user_text, result.get("reply", ""))
         result.update({"mode": "mock" if MOCK else "live", "version": VERSION})
+        usage = _get_usage()
+        if usage:
+            result["usage"] = usage
         self._json(200, result)
 
     def _remember(self, session_id, history, user_text, reply):
@@ -399,6 +442,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.flush()
 
     def _stream(self, user_text, messages, history, session_id, history_len, llm_override=None):
+        _reset_usage()
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream; charset=utf-8")
         self.send_header("Cache-Control", "no-cache")
@@ -415,7 +459,11 @@ class Handler(BaseHTTPRequestHandler):
             return
         reply = "".join(parts)
         self._remember(session_id, history, user_text, reply)
-        self._sse({"done": True, "mode": "mock" if MOCK else "live", "version": VERSION})
+        done_obj = {"done": True, "mode": "mock" if MOCK else "live", "version": VERSION}
+        usage = _get_usage()
+        if usage:
+            done_obj["usage"] = usage
+        self._sse(done_obj)
 
     def log_message(self, fmt, *args):
         sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % args))
