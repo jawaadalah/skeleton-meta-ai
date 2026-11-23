@@ -307,7 +307,7 @@ SKILLS = {
         "run": skill_hapus_memori,
     },
     "buat_aplikasi_android": {
-        "organ": "tangan", "risk": "aman", "params": ["nama", "paket"],
+        "organ": "tangan", "risk": "aman", "params": ["nama", "paket", "deskripsi"],
         "description": "Membuat proyek aplikasi Android Kotlin lengkap (gradle, manifest, MainActivity) dari template, siap dibuka di Android Studio.",
         "run": skill_buat_aplikasi_android,
     },
@@ -317,7 +317,7 @@ SKILLS = {
         "run": skill_buat_game_android,
     },
     "buat_halaman_web": {
-        "organ": "tangan", "risk": "aman", "params": ["nama", "jenis"],
+        "organ": "tangan", "risk": "aman", "params": ["nama", "jenis", "deskripsi"],
         "description": "Membuat satu file index.html utuh. jenis: landing (default), game, atau kalkulator.",
         "run": skill_buat_halaman_web,
     },
