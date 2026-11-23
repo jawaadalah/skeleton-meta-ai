@@ -76,6 +76,17 @@ def deterministic_route(message):
                                "hasil generate", "daftar hasil")):
         return "daftar_hasil_generate", {}
 
+    # v7.1 — frasa natural tanpa kata "android"/"web" (dari pemakaian nyata:
+    # "buat aplikasi game simpel" dulu jatuh ke echo mock dan membingungkan).
+    m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?(?:aplikasi\s+)?game\s*(.*)", text, flags=re.I)
+    if m:
+        nama = re.sub(r"\b(simpel|sederhana|simple)\b", "", m.group(1), flags=re.I).strip(" :")
+        return "buat_game_android", {"nama": nama or "Game Ketuk Target"}
+
+    m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?aplikasi\s+(.+)", text, flags=re.I)
+    if m:
+        return "buat_aplikasi_android", {"nama": m.group(1).strip(" :")}
+
     if low.startswith(("catat:", "catat ", "simpan catatan")):
         teks = re.sub(r"^(catat[: ]+|simpan catatan[: ]+)", "", text, flags=re.I).strip()
         return "simpan_catatan", {"teks": teks or text}
@@ -150,7 +161,21 @@ def run_agent(message, session_id, history, llm_call, mock_reply_fn):
         return {"reply": reply, "steps": steps}
 
     if llm_call is None:
-        return {"reply": mock_reply_fn(message, len(history)), "steps": steps}
+        # Mode mock: tanpa otak LLM, agen hanya bisa menjalankan perintah yang
+        # cocok dengan skill. Jelaskan itu + beri contoh, jangan echo mentah.
+        return {"reply": (
+            "Aku masih mode mock (META_API_KEY belum dipasang), jadi perintah bebas "
+            "belum bisa kupahami — tapi skill-ku jalan penuh. Coba salah satu:\n"
+            "• hitung 45 * 3\n"
+            "• jam berapa sekarang?\n"
+            "• catat: beli kopi untuk warung\n"
+            "• ingat bahwa warna favorit saya biru\n"
+            "• buatkan aplikasi android Kasir Warung\n"
+            "• buatkan game android Balap Kelereng\n"
+            "• buatkan halaman web Toko Bunga Melati\n"
+            "• ambil isi https://contoh.com\n"
+            "Pasang META_API_KEY di backend supaya aku bisa memahami perintah apa pun."
+        ), "steps": steps}
 
     # Mode live: LLM memilih skill atau jawab langsung, maks MAX_STEPS putaran.
     convo = list(history[-10:])

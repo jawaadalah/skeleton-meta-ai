@@ -83,7 +83,7 @@ class MainActivity : AppCompatActivity() {
 
         restoreChat()
         if (shown.isEmpty()) {
-            addBubble("Halo! Saya skeleton Meta AI v3 — jawaban saya sekarang streaming. Tulis pesan, lalu tekan Kirim.", fromUser = false, save = true)
+            addBubble("Halo! Saya Skele, asisten Your Agent v7. Tanya apa saja, atau aktifkan Mode Agen dan suruh saya bekerja: hitung, mencatat, mengingat, sampai membuatkan aplikasi, game, dan web. Tulis pesan, lalu tekan Kirim.", fromUser = false, save = true)
         }
 
         buttonSend.setOnClickListener {

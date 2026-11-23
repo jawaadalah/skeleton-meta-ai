@@ -191,6 +191,14 @@ def test_v7():
     assert r["steps"][0]["skill"] == "daftar_hasil_generate" and "kasir-warung" in r["reply"], r
     print("OK  v7 generator: daftar hasil generate menampilkan proyek-proyek tadi")
 
+    r = agent({"message": "buat aplikasi game simpel", "session_id": "v7-tes"})
+    assert r["steps"] and r["steps"][0]["skill"] == "buat_game_android", r
+    print("OK  v7.1 router natural: 'buat aplikasi game simpel' -> buat_game_android (kasus nyata dari HP pengguna)")
+
+    r = agent({"message": "tolong dong kerjakan sesuatu yang bebas", "session_id": "v7-tes"})
+    assert "META_API_KEY" in r["reply"] and "buatkan game android" in r["reply"], r
+    print("OK  v7.1 fallback mock: perintah bebas dijawab panduan contoh perintah, bukan echo mentah")
+
     r = agent({"message": "hapus memori saya", "session_id": "v7-tes"})
     assert r.get("needs_confirmation") and r.get("confirm_token"), r
     masih = call("GET", "/memory")["memory"]
