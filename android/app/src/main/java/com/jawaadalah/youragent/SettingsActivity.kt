@@ -37,20 +37,43 @@ class SettingsActivity : AppCompatActivity() {
     private val quotaExecutor = Executors.newSingleThreadExecutor()
     private val quotaHandler = Handler(Looper.getMainLooper())
     private lateinit var textQuota: TextView
+    // Kuota LIVE: snapshot terakhir dari /health + tenggat reset (elapsedRealtime)
+    // supaya hitung mundur berjalan per detik secara lokal di antara polling.
+    private var lastQuota: JSONObject? = null
+    private var lastModel: String = "-"
+    private var tokenResetAtMs: Long = 0L
+    private var requestResetAtMs: Long = 0L
     private val quotaPoll = object : Runnable {
         override fun run() {
             loadQuota()
-            quotaHandler.postDelayed(this, 20_000)
+            quotaHandler.postDelayed(this, 3_000)
+        }
+    }
+    private val quotaTicker = object : Runnable {
+        override fun run() {
+            renderQuota()
+            val now = android.os.SystemClock.elapsedRealtime()
+            if ((tokenResetAtMs > 0 && now >= tokenResetAtMs) ||
+                (requestResetAtMs > 0 && now >= requestResetAtMs)) {
+                tokenResetAtMs = 0L
+                requestResetAtMs = 0L
+                loadQuota()
+            }
+            quotaHandler.postDelayed(this, 1_000)
         }
     }
 
     override fun onResume() {
         super.onResume()
-        if (::textQuota.isInitialized) quotaHandler.post(quotaPoll)
+        if (::textQuota.isInitialized) {
+            quotaHandler.post(quotaPoll)
+            quotaHandler.post(quotaTicker)
+        }
     }
 
     override fun onPause() {
         quotaHandler.removeCallbacks(quotaPoll)
+        quotaHandler.removeCallbacks(quotaTicker)
         super.onPause()
     }
 
@@ -64,29 +87,72 @@ class SettingsActivity : AppCompatActivity() {
                     readTimeout = 8000
                 }
                 val health = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
-                val fmt = java.text.NumberFormat.getInstance(java.util.Locale("id", "ID"))
+                lastModel = health.optString("model", "-")
                 val quota = health.optJSONObject("quota")
-                val text = if (quota == null) {
-                    "Model aktif: " + health.optString("model", "-") + "\n" +
-                        "Sisa kuota belum terbaca — server menangkapnya setelah permintaan AI " +
-                        "pertama sejak dinyalakan. Kirim satu pesan chat dulu, lalu kembali ke sini."
-                } else {
-                    fun n(key: String): String {
-                        val v = quota.optLong(key, -1)
-                        return if (v >= 0) fmt.format(v) else "?"
-                    }
-                    val reset = quota.optString("reset_tokens", "")
-                    "Model aktif: " + health.optString("model", "-") + "\n" +
-                        "🪙 Sisa token: " + n("remaining_tokens") + " / " + n("limit_tokens") + "\n" +
-                        "📨 Sisa permintaan: " + n("remaining_requests") + " / " + n("limit_requests") +
-                        (if (reset.isNotEmpty()) "\n⏳ Token di-reset dalam: " + reset else "")
+                if (quota != null) {
+                    lastQuota = quota
+                    val now = android.os.SystemClock.elapsedRealtime()
+                    tokenResetAtMs = parseDurationSec(quota.optString("reset_tokens", ""))
+                        ?.let { now + (it * 1000).toLong() } ?: 0L
+                    requestResetAtMs = parseDurationSec(quota.optString("reset_requests", ""))
+                        ?.let { now + (it * 1000).toLong() } ?: 0L
                 }
-                runOnUiThread { if (::textQuota.isInitialized) textQuota.text = text }
+                runOnUiThread { renderQuota() }
             } catch (e: Exception) {
                 runOnUiThread {
-                    if (::textQuota.isInitialized) textQuota.text = "Gagal memuat kuota: " + (e.message ?: "koneksi bermasalah")
+                    // Live: gagal sesaat tidak menghapus angka terakhir yang tampil.
+                    if (::textQuota.isInitialized && lastQuota == null) {
+                        textQuota.text = "Gagal memuat kuota: " + (e.message ?: "koneksi bermasalah")
+                    }
                 }
             }
+        }
+    }
+
+    /** Urai durasi gaya Go dari header provider ("22.59s", "1m30s", "350ms") menjadi detik. */
+    private fun parseDurationSec(raw: String): Double? {
+        if (raw.isBlank()) return null
+        var total = 0.0
+        var matched = false
+        for (m in Regex("""(\d+(?:\.\d+)?)(ms|s|m|h)""").findAll(raw)) {
+            matched = true
+            val v = m.groupValues[1].toDouble()
+            total += when (m.groupValues[2]) {
+                "ms" -> v / 1000.0
+                "s" -> v
+                "m" -> v * 60.0
+                else -> v * 3600.0
+            }
+        }
+        return if (matched) total else null
+    }
+
+    private fun fmtCountdown(deadlineMs: Long): String {
+        val sisa = (deadlineMs - android.os.SystemClock.elapsedRealtime() + 999) / 1000
+        if (sisa <= 0) return "sekarang"
+        return if (sisa < 60) sisa.toString() + "d"
+        else (sisa / 60).toString() + "m " + (sisa % 60).toString() + "d"
+    }
+
+    /** Gambar ulang kartu kuota dari snapshot terakhir + hitung mundur saat ini. */
+    private fun renderQuota() {
+        if (!::textQuota.isInitialized) return
+        val quota = lastQuota
+        textQuota.text = if (quota == null) {
+            "Model aktif: " + lastModel + "\n" +
+                "Sisa kuota belum terbaca — server menangkapnya setelah permintaan AI " +
+                "pertama sejak dinyalakan. Kirim satu pesan chat dulu, lalu kembali ke sini."
+        } else {
+            val fmt = java.text.NumberFormat.getInstance(java.util.Locale("id", "ID"))
+            fun n(key: String): String {
+                val v = quota.optLong(key, -1)
+                return if (v >= 0) fmt.format(v) else "?"
+            }
+            "Model aktif: " + lastModel + "\n" +
+                "🪙 Sisa token: " + n("remaining_tokens") + " / " + n("limit_tokens") + "\n" +
+                "📨 Sisa permintaan: " + n("remaining_requests") + " / " + n("limit_requests") +
+                (if (tokenResetAtMs > 0) "\n⏳ Token di-reset dalam: " + fmtCountdown(tokenResetAtMs) else "") +
+                (if (requestResetAtMs > 0) "\n⏳ Permintaan di-reset dalam: " + fmtCountdown(requestResetAtMs) else "")
         }
     }
 

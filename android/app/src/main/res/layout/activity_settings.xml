@@ -196,7 +196,7 @@
 
             <TextView
                 style="@style/Widget.YourAgent.SettingsHint"
-                android:text="Diperbarui otomatis tiap 20 detik selama halaman ini terbuka, dan setiap selesai mengobrol di layar utama." />
+                android:text="Live — diperbarui otomatis selama halaman ini terbuka, dan setiap selesai mengobrol di layar utama." />
         </LinearLayout>
 
         <!-- Tentang -->

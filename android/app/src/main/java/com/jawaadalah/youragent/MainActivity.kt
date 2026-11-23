@@ -196,6 +196,13 @@ class MainActivity : AppCompatActivity() {
             "  •  Sisa permintaan: " + num("remaining_requests") + " / " + num("limit_requests")
     }
 
+    private val quotaPollMain = object : Runnable {
+        override fun run() {
+            fetchQuota()
+            uiHandler.postDelayed(this, 5_000)
+        }
+    }
+
     private fun fetchQuota() {
         val url = backendUrl.trimEnd('/')
         executor.execute {
@@ -338,13 +345,22 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (::textQuotaLive.isInitialized) fetchQuota()
+        if (::textQuotaLive.isInitialized) {
+            fetchQuota()
+            uiHandler.removeCallbacks(quotaPollMain)
+            uiHandler.post(quotaPollMain)
+        }
         // Sinkronkan sakelar header dengan pengaturan yang tersimpan.
         val sw = findViewById<Switch>(R.id.switchAgent)
         val saved = prefs.getBoolean("agent_default", false)
         if (sw.isChecked != saved) sw.isChecked = saved
         paintAgentSwitch()
         if (appliedTheme != -1 && prefs.getInt("tema", 0) != appliedTheme) recreate()
+    }
+
+    override fun onPause() {
+        uiHandler.removeCallbacks(quotaPollMain)
+        super.onPause()
     }
 
     // ------------------------------------------------------- log proses live --
