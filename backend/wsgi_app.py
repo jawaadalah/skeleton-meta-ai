@@ -182,6 +182,25 @@ def application(environ, start_response):
         return _json(start_response, 200, {})
 
     if method == "GET":
+        if path == "/nettest":
+            import urllib.request as _u
+            info = {"proxies": {k: v for k, v in os.environ.items() if "proxy" in k.lower()}}
+            try:
+                info["proxy_dns"] = socket.gethostbyname("proxy.server")
+            except Exception as e:
+                info["proxy_dns"] = f"ERR {e}"
+            for name, url in (("groq", "https://api.groq.com/openai/v1/models"),
+                              ("openrouter", "https://openrouter.ai/api/v1/models")):
+                for ua_label, ua in (("urllib", None), ("browser", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36")):
+                    req = _u.Request(url, headers={"User-Agent": ua} if ua else {})
+                    try:
+                        _u.urlopen(req, timeout=15)
+                        info[f"{name}_{ua_label}"] = 200
+                    except urllib.error.HTTPError as e:
+                        info[f"{name}_{ua_label}"] = f"HTTP {e.code}"
+                    except Exception as e:
+                        info[f"{name}_{ua_label}"] = f"ERR {str(e)[:120]}"
+            return _json(start_response, 200, info)
         if path in ("/soul", "/memory"):
             if bm.APP_TOKEN and environ.get("HTTP_X_APP_TOKEN", "") != bm.APP_TOKEN:
                 return _json(start_response, 401,
