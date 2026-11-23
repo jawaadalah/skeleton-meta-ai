@@ -5,14 +5,14 @@ plugins {
 
 android {
     namespace = "com.jawaadalah.youragent"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.jawaadalah.youragent"
         minSdk = 24
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        targetSdk = 35
+        versionCode = 9
+        versionName = "9.0"
     }
 
     buildTypes {

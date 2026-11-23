@@ -30,4 +30,13 @@
         <item name="android:textAllCaps">false</item>
     </style>
 
+
+    <!-- Tema aplikasi v9: gelap premium, tanpa ActionBar (header gradasi kustom) -->
+    <style name="Theme.YourAgent" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorPrimary">@color/accent_cyan</item>
+        <item name="colorAccent">@color/accent_violet</item>
+        <item name="android:windowBackground">@color/bg_navy_deep</item>
+        <item name="android:statusBarColor">@color/bg_navy_deep</item>
+        <item name="android:navigationBarColor">@color/bg_navy_deep</item>
+    </style>
 </resources>

@@ -49,7 +49,7 @@ import memory_store as memory_mod
 import skills as skills_mod
 import store as store_mod
 
-VERSION = "8.0"
+VERSION = "9.0"
 ROOT = Path(__file__).resolve().parent.parent
 
 

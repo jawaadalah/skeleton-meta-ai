@@ -2,51 +2,57 @@ package com.jawaadalah.youragent
 
 import android.app.AlertDialog
 import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.text.Spannable
+import android.text.SpannableStringBuilder
+import android.text.method.LinkMovementMethod
+import android.text.style.StyleSpan
+import android.text.style.TypefaceSpan
+import android.text.util.Linkify
 import android.view.Gravity
+import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Switch
-import android.text.method.LinkMovementMethod
-import android.text.util.Linkify
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
+import java.net.SocketTimeoutException
 import java.net.URL
+import java.net.UnknownHostException
 import java.util.UUID
 import java.util.concurrent.Executors
 
 /**
- * Your Agent.
+ * Your Agent — aplikasi chat Android (Kotlin, tanpa library HTTP tambahan).
  *
- * Baru di v5 (Mode Agen):
- *  - Sakelar "Mode Agen": pesan dikirim ke /agent, bukan /chat/stream.
- *    Agen bisa memakai skill (kalkulator, web, catatan) lewat harness semi
- *    di backend. Jejak skill yang dipakai ditampilkan di bawah jawaban.
- *  - Aksi merusak dari agen TIDAK langsung jalan: aplikasi menampilkan
- *    dialog konfirmasi; hanya tombol "Setuju, jalankan" yang meneruskan
- *    confirm_token ke backend.
+ * v9 (optimalisasi mobile + premium):
+ *  - Edge-to-edge modern (targetSdk 35): konten menghormati status bar,
+ *    navigation bar, dan keyboard lewat WindowInsets.
+ *  - Balasan AI dirender markdown ringan: **tebal**, *miring*, `kode`,
+ *    judul #, dan tautan yang bisa diketuk (termasuk link unduh APK).
+ *  - Indikator mengetik beranimasi titik, tombol kirim meredup saat sibuk.
+ *  - Enter/ tombol kirim IME langsung mengirim pesan.
+ *  - Pesan error ramah Bahasa Indonesia (koneksi/ timeout dibedakan).
  *
- * Dari v4 (siap backend publik):
- *  - Token aplikasi: bila backend di-deploy dengan APP_TOKEN, aplikasi mengirim
- *    header X-App-Token. Token diatur dari dialog tombol URL, tersimpan lokal.
+ * v8: link di balasan agen bisa diketuk (unduh APK pabrik).
+ * v5: Mode Agen (/agent + skill + gerbang konfirmasi aksi merusak).
+ * v4: APP_TOKEN opsional. v3: streaming SSE /chat/stream.
+ * v2: session_id backend, riwayat lokal SharedPreferences, tombol URL/Hapus.
  *
- * Dari v3:
- *  - Jawaban STREAMING: Android membaca /chat/stream (SSE) dan menumbuhkan
- *    balon AI potongan demi potongan, seperti aplikasi chat AI beneran.
- *
- * Dari v2:
- *  - Balon chat berwarna (biru = kamu, abu = AI) + indikator "Sedang mengetik..."
- *  - Riwayat tampil tersimpan lokal (SharedPreferences) — chat tidak hilang saat aplikasi ditutup.
- *  - Percakapan memakai session_id: backend yang mengingat konteks, Android cukup kirim 1 pesan.
- *  - Tombol URL: ganti alamat backend dari aplikasi (untuk tes di HP fisik tanpa edit kode).
- *  - Tombol Hapus: bersihkan layar + reset ingatan sesi di backend.
- *
- * API key tetap TIDAK ada di aplikasi ini — key disimpan backend (.env).
+ * API key TIDAK ada di aplikasi — key disimpan backend (.env).
  */
 class MainActivity : AppCompatActivity() {
 
@@ -57,6 +63,8 @@ class MainActivity : AppCompatActivity() {
 
     private val executor = Executors.newSingleThreadExecutor()
     private val prefs by lazy { getSharedPreferences("skeleton", MODE_PRIVATE) }
+    private val uiHandler = Handler(Looper.getMainLooper())
+    private var typingRunnable: Runnable? = null
 
     private var backendUrl: String
         get() = prefs.getString("backend_url", "https://jawaadalah.pythonanywhere.com")!!
@@ -71,12 +79,25 @@ class MainActivity : AppCompatActivity() {
             .also { prefs.edit().putString("session_id", it).apply() }
         set(value) = prefs.edit().putString("session_id", value).apply()
 
-    // Daftar pesan yang tampil: [{"fromUser": true/false, "text": "..."}]
     private val shown = mutableListOf<Pair<Boolean, String>>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Edge-to-edge: gambar di belakang system bars, atur padding via insets.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(R.layout.activity_main)
+        val root = findViewById<View>(R.id.rootLayout)
+        WindowInsetsControllerCompat(window, root).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
+        }
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            v.setPadding(bars.left, bars.top, bars.right, maxOf(bars.bottom, ime.bottom))
+            insets
+        }
 
         chatContainer = findViewById(R.id.chatContainer)
         scrollChat = findViewById(R.id.scrollChat)
@@ -85,28 +106,65 @@ class MainActivity : AppCompatActivity() {
 
         restoreChat()
         if (shown.isEmpty()) {
-            addBubble("Halo! Saya Skele, asisten Your Agent v7. Tanya apa saja, atau aktifkan Mode Agen dan suruh saya bekerja: hitung, mencatat, mengingat, sampai membuatkan aplikasi, game, dan web. Tulis pesan, lalu tekan Kirim.", fromUser = false, save = true)
+            addBubble(
+                "Halo! Saya Skele, asisten Your Agent. Tanya apa saja — atau aktifkan **Mode Agen** lalu suruh saya bekerja: menghitung, mencatat, mengingat, membuat halaman web, sampai membuatkan **aplikasi & game Android jadi APK**. Coba tulis: buatkan game android Balap Kelereng jadi apk",
+                fromUser = false, save = true
+            )
         }
 
-        buttonSend.setOnClickListener {
-            val text = editMessage.text.toString().trim()
-            if (text.isEmpty()) return@setOnClickListener
-            editMessage.text.clear()
-            if (findViewById<Switch>(R.id.switchAgent).isChecked) sendAgent(text) else sendMessage(text)
+        buttonSend.setOnClickListener { trySend() }
+        editMessage.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEND) { trySend(); true } else false
         }
         findViewById<Button>(R.id.buttonClear).setOnClickListener { clearChat() }
         findViewById<Button>(R.id.buttonUrl).setOnClickListener { askBackendUrl() }
     }
 
+    private fun trySend() {
+        val text = editMessage.text.toString().trim()
+        if (text.isEmpty() || !buttonSend.isEnabled) return
+        editMessage.text.clear()
+        if (findViewById<Switch>(R.id.switchAgent).isChecked) sendAgent(text) else sendMessage(text)
+    }
+
+    private fun setBusy(busy: Boolean) {
+        buttonSend.isEnabled = !busy
+        buttonSend.alpha = if (busy) 0.45f else 1f
+    }
+
+    // ------------------------------------------------------------ indikator --
+    private fun startTyping(bubble: TextView, base: String) {
+        stopTyping()
+        var dots = 0
+        val runnable = object : Runnable {
+            override fun run() {
+                dots = (dots + 1) % 4
+                bubble.text = base + ".".repeat(dots)
+                uiHandler.postDelayed(this, 450)
+            }
+        }
+        typingRunnable = runnable
+        bubble.text = base
+        uiHandler.postDelayed(runnable, 450)
+    }
+
+    private fun stopTyping() {
+        typingRunnable?.let { uiHandler.removeCallbacks(it) }
+        typingRunnable = null
+    }
+
+    // ------------------------------------------------------------- chat SSE --
     private fun sendMessage(text: String) {
         addBubble(text, fromUser = true, save = true)
-        buttonSend.isEnabled = false
-        val bubble = addBubble("Sedang mengetik...", fromUser = false, save = false)
+        setBusy(true)
+        val bubble = addBubble("", fromUser = false, save = false)
+        startTyping(bubble, "Skele sedang mengetik")
 
         executor.execute {
             val full = StringBuilder()
             try {
                 streamChat(text) { chunk ->
+                    if (full.isEmpty()) runOnUiThread { stopTyping() }
                     full.append(chunk)
                     runOnUiThread {
                         bubble.text = full.toString()
@@ -115,46 +173,39 @@ class MainActivity : AppCompatActivity() {
                 }
                 if (full.isEmpty()) full.append("(jawaban kosong dari backend)")
             } catch (e: Exception) {
-                if (full.isEmpty()) {
-                    full.append(
-                        "Gagal menghubungi backend: ${e.message}\n" +
-                            "Pastikan backend jalan (python3 backend/main.py) dan alamatnya benar (tombol URL)."
-                    )
-                } else {
-                    full.append("\n[Koneksi terputus di tengah jawaban]")
-                }
+                if (full.isEmpty()) full.append(friendlyError(e)) else full.append("\n[Koneksi terputus di tengah jawaban]")
             }
             runOnUiThread {
-                bubble.text = full.toString()
+                stopTyping()
+                setBubbleFormatted(bubble, full.toString())
                 shown.add(false to full.toString())
                 saveChat()
-                buttonSend.isEnabled = true
+                setBusy(false)
+                scrollChat.post { scrollChat.fullScroll(ScrollView.FOCUS_DOWN) }
             }
         }
     }
 
-    /**
-     * POST ke /chat/stream lalu baca event SSE baris demi baris:
-     *   data: {"chunk": "..."}   -> onChunk dipanggil untuk tiap potongan
-     *   data: {"done": true}     -> stream selesai
-     *   data: {"error": "..."}   -> dilempar sebagai exception
-     */
+    private fun friendlyError(e: Exception): String = when (e) {
+        is UnknownHostException -> "Tidak ada koneksi internet atau server tidak terjangkau. Periksa jaringan HP kamu, lalu coba lagi."
+        is SocketTimeoutException -> "Server terlalu lama menjawab (timeout). Coba kirim lagi sebentar."
+        else -> "Maaf, gagal menghubungi server: ${e.message ?: "koneksi bermasalah"}. Periksa jaringan, lalu coba lagi."
+    }
+
+    /** POST /chat/stream — baca SSE: data {"chunk"} / {"done"} / {"error"}. */
     private fun streamChat(text: String, onChunk: (String) -> Unit) {
-        val body = JSONObject()
-            .put("message", text)
-            .put("session_id", sessionId)
-            .toString()
+        val body = JSONObject().put("message", text).put("session_id", sessionId).toString()
         val conn = URL("$backendUrl/chat/stream").openConnection() as HttpURLConnection
         conn.requestMethod = "POST"
         conn.setRequestProperty("Content-Type", "application/json")
         if (appToken.isNotEmpty()) conn.setRequestProperty("X-App-Token", appToken)
-        conn.connectTimeout = 10_000
+        conn.connectTimeout = 15_000
         conn.readTimeout = 120_000
         conn.doOutput = true
         conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
 
         if (conn.responseCode !in 200..299) {
-            val response = conn.errorStream.bufferedReader().use { it.readText() }
+            val response = conn.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
             val msg = try { JSONObject(response).optString("error", response) } catch (_: Exception) { response }
             throw IllegalStateException("Backend menjawab ${conn.responseCode}: $msg")
         }
@@ -176,8 +227,9 @@ class MainActivity : AppCompatActivity() {
     // ------------------------------------------------------------- Mode Agen --
     private fun sendAgent(text: String) {
         addBubble(text, fromUser = true, save = true)
-        buttonSend.isEnabled = false
-        val bubble = addBubble("Agen sedang bekerja...", fromUser = false, save = false)
+        setBusy(true)
+        val bubble = addBubble("", fromUser = false, save = false)
+        startTyping(bubble, "Agen sedang bekerja")
 
         executor.execute {
             var display = ""
@@ -196,15 +248,17 @@ class MainActivity : AppCompatActivity() {
                     proposed = json.optJSONObject("proposed")?.optString("skill") ?: "aksi agen"
                 }
             } catch (e: Exception) {
-                display = "Agen gagal: ${e.message}"
+                display = friendlyError(e)
             }
             val token = confirmToken
             val skillName = proposed
             runOnUiThread {
-                bubble.text = display
+                stopTyping()
+                setBubbleFormatted(bubble, display)
                 shown.add(false to display)
                 saveChat()
-                buttonSend.isEnabled = true
+                setBusy(false)
+                scrollChat.post { scrollChat.fullScroll(ScrollView.FOCUS_DOWN) }
                 if (token != null) askConfirmation(skillName, token)
             }
         }
@@ -215,17 +269,17 @@ class MainActivity : AppCompatActivity() {
             .setTitle("Konfirmasi aksi agen")
             .setMessage("Agen ingin menjalankan aksi merusak: $skillName.\nAksi ini belum dijalankan. Setuju?")
             .setPositiveButton("Setuju, jalankan") { _, _ ->
-                buttonSend.isEnabled = false
+                setBusy(true)
                 executor.execute {
                     val result = try {
                         val json = postAgent(JSONObject().put("session_id", sessionId).put("confirm_token", token))
                         json.optString("reply", "(selesai)")
                     } catch (e: Exception) {
-                        "Konfirmasi gagal: ${e.message}"
+                        friendlyError(e)
                     }
                     runOnUiThread {
                         addBubble(result, fromUser = false, save = true)
-                        buttonSend.isEnabled = true
+                        setBusy(false)
                     }
                 }
             }
@@ -235,19 +289,18 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    /** POST JSON ke /agent dengan header token (bila diatur). */
     private fun postAgent(body: JSONObject): JSONObject {
         val conn = URL("$backendUrl/agent").openConnection() as HttpURLConnection
         conn.requestMethod = "POST"
         conn.setRequestProperty("Content-Type", "application/json")
         if (appToken.isNotEmpty()) conn.setRequestProperty("X-App-Token", appToken)
-        conn.connectTimeout = 10_000
-        conn.readTimeout = 120_000
+        conn.connectTimeout = 15_000
+        conn.readTimeout = 180_000
         conn.doOutput = true
         conn.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
         val stream = if (conn.responseCode in 200..299) conn.inputStream else conn.errorStream
-        val response = stream.bufferedReader().use { it.readText() }
-        val json = JSONObject(response)
+        val response = stream?.bufferedReader()?.use { it.readText() } ?: ""
+        val json = try { JSONObject(response) } catch (_: Exception) { JSONObject() }
         if (conn.responseCode !in 200..299) {
             throw IllegalStateException("Backend ${conn.responseCode}: ${json.optString("error", response)}")
         }
@@ -301,21 +354,28 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    // ------------------------------------------------------------ bubble UI --
+    /** Tampilkan teks final balasan AI: render markdown ringan + link aktif. */
+    private fun setBubbleFormatted(bubble: TextView, raw: String) {
+        bubble.text = formatReply(raw)
+        bubble.movementMethod = LinkMovementMethod.getInstance()
+    }
+
     private fun addBubble(text: String, fromUser: Boolean, save: Boolean): TextView {
+        val rawText = text
         val bubble = TextView(this).apply {
-            this.text = text
-            textSize = 16f
+            textSize = 15.5f
             setBackgroundResource(if (fromUser) R.drawable.bubble_user else R.drawable.bubble_ai)
-            // Tema gelap premium: teks agen terang di atas kartu gelap.
             setTextColor(if (fromUser) Color.WHITE else getColor(R.color.text_primary))
-            // v8: link unduh APK di balasan agen bisa diketuk.
-            if (!fromUser) {
-                Linkify.addLinks(this, Linkify.WEB_URLS)
+            setLineSpacing(0f, 1.12f)
+            if (fromUser) {
+                this.text = rawText
+            } else {
+                this.text = formatReply(rawText)
                 movementMethod = LinkMovementMethod.getInstance()
                 setLinkTextColor(Color.parseColor("#4DD8FF"))
             }
-            // Lebar bubble maksimal ~85% layar agar nyaman dibaca.
-            maxWidth = (resources.displayMetrics.widthPixels * 0.85).toInt()
+            maxWidth = (resources.displayMetrics.widthPixels * 0.86).toInt()
         }
         val params = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -333,6 +393,66 @@ class MainActivity : AppCompatActivity() {
         return bubble
     }
 
+    /**
+     * Markdown ringan untuk balasan AI: **tebal**, *miring*, `kode`,
+     * judul (#), dan URL yang bisa diketuk. Bentuk <https://...> dari LLM
+     * diluruskan dulu menjadi URL polos agar terbaca Linkify.
+     */
+    private fun formatReply(raw: String): CharSequence {
+        val cleaned = raw.replace(Regex("<(https?://[^>\\s]+)>"), "$1")
+        val sb = SpannableStringBuilder()
+        val lines = cleaned.split("\n")
+        for ((idx, rawLine) in lines.withIndex()) {
+            var line = rawLine
+            val isHeading = line.startsWith("#")
+            if (isHeading) line = line.trimStart('#').trim()
+            val start = sb.length
+            appendInline(sb, line)
+            if (isHeading && sb.length > start) {
+                sb.setSpan(StyleSpan(Typeface.BOLD), start, sb.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            if (idx < lines.size - 1) sb.append("\n")
+        }
+        Linkify.addLinks(sb, Linkify.WEB_URLS)
+        return sb
+    }
+
+    private fun appendInline(sb: SpannableStringBuilder, line: String) {
+        var i = 0
+        while (i < line.length) {
+            when {
+                line.startsWith("**", i) -> {
+                    val end = line.indexOf("**", i + 2)
+                    if (end > i + 2) {
+                        val s = sb.length
+                        sb.append(line.substring(i + 2, end))
+                        sb.setSpan(StyleSpan(Typeface.BOLD), s, sb.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        i = end + 2
+                    } else { sb.append("**"); i += 2 }
+                }
+                line.startsWith("`", i) -> {
+                    val end = line.indexOf('`', i + 1)
+                    if (end > i + 1) {
+                        val s = sb.length
+                        sb.append(line.substring(i + 1, end))
+                        sb.setSpan(TypefaceSpan("monospace"), s, sb.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        i = end + 1
+                    } else { sb.append("`"); i += 1 }
+                }
+                line[i] == '*' -> {
+                    val end = line.indexOf('*', i + 1)
+                    if (end > i + 1) {
+                        val s = sb.length
+                        sb.append(line.substring(i + 1, end))
+                        sb.setSpan(StyleSpan(Typeface.ITALIC), s, sb.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        i = end + 1
+                    } else { sb.append("*"); i += 1 }
+                }
+                else -> { sb.append(line[i]); i += 1 }
+            }
+        }
+    }
+
     private fun saveChat() {
         val arr = JSONArray()
         for ((fromUser, text) in shown) {
@@ -347,21 +467,24 @@ class MainActivity : AppCompatActivity() {
             val arr = JSONArray(raw)
             for (i in 0 until arr.length()) {
                 val item = arr.getJSONObject(i)
-                val fromUser = item.getBoolean("fromUser")
-                val text = item.getString("text")
-                shown.add(fromUser to text)
-                // Gambar ulang tanpa menyimpan ulang.
+                // Gambar ulang tanpa menyimpan ulang (shown diisi manual di sini).
+                shown.add(item.getBoolean("fromUser") to item.getString("text"))
+            }
+            for ((fromUser, text) in shown) {
+                val rawText = text
                 val bubble = TextView(this).apply {
-                    this.text = text
-                    textSize = 16f
+                    textSize = 15.5f
                     setBackgroundResource(if (fromUser) R.drawable.bubble_user else R.drawable.bubble_ai)
                     setTextColor(if (fromUser) Color.WHITE else getColor(R.color.text_primary))
-                    if (!fromUser) {
-                        Linkify.addLinks(this, Linkify.WEB_URLS)
+                    setLineSpacing(0f, 1.12f)
+                    if (fromUser) {
+                        this.text = rawText
+                    } else {
+                        this.text = formatReply(rawText)
                         movementMethod = LinkMovementMethod.getInstance()
                         setLinkTextColor(Color.parseColor("#4DD8FF"))
                     }
-                    maxWidth = (resources.displayMetrics.widthPixels * 0.85).toInt()
+                    maxWidth = (resources.displayMetrics.widthPixels * 0.86).toInt()
                 }
                 val params = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
