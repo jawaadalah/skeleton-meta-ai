@@ -133,13 +133,60 @@ def skill_ambil_web(args, ctx):
     host = re.sub(r"^https?://", "", url).split("/")[0].split(":")[0]
     if not _is_public_host(host):
         return f"Error: host '{host}' ditolak — alamat privat/lokal tidak boleh dijangkau agen (anti-SSRF)."
-    req = urllib.request.Request(url, headers={"User-Agent": "SkeletonAgent/5.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "YourAgent/7.0"})
     with urllib.request.urlopen(req, timeout=10) as resp:
         raw = resp.read(200_000).decode("utf-8", "replace")
     text = re.sub(r"<script.*?</script>|<style.*?</style>", " ", raw, flags=re.S | re.I)
     text = html.unescape(re.sub(r"<[^>]+>", " ", text))
     text = re.sub(r"\s+", " ", text).strip()
     return f"Isi {url} (±{len(text)} karakter, dipotong 2.000):\n{text[:2000]}"
+
+
+# ------------------------------------------------- memori & generator (v7) --
+import generate as generate_mod
+import memory_store as memory_mod
+
+
+def skill_ingat(args, ctx):
+    fakta = str(args.get("fakta", "")).strip()
+    if not fakta:
+        return "Error: parameter 'fakta' kosong."
+    total = memory_mod.append_fact(fakta)
+    return f"Diingat di MEMORY.md (total {total} fakta): \"{fakta}\""
+
+
+def skill_baca_memori(args, ctx):
+    text = memory_mod.read_full()
+    if not text or "- " not in text:
+        return "MEMORY.md masih kosong — belum ada fakta yang diingat."
+    return "Isi MEMORY.md:\n" + text
+
+
+def skill_hapus_memori(args, ctx):
+    """Level KONFIRMASI — hanya jalan setelah manusia menyetujui."""
+    count = memory_mod.clear_all()
+    return f"{count} fakta di MEMORY.md sudah dihapus. Ingatan jangka panjang kosong lagi."
+
+
+def skill_buat_aplikasi_android(args, ctx):
+    return generate_mod.android_app(str(args.get("nama", "")).strip(),
+                                    str(args.get("paket", "")).strip())
+
+
+def skill_buat_game_android(args, ctx):
+    return generate_mod.android_game(str(args.get("nama", "")).strip(),
+                                     str(args.get("paket", "")).strip())
+
+
+def skill_buat_halaman_web(args, ctx):
+    jenis = str(args.get("jenis", "landing")).strip().lower()
+    if jenis not in ("landing", "game", "kalkulator"):
+        jenis = "landing"
+    return generate_mod.web_page(str(args.get("nama", "")).strip(), jenis)
+
+
+def skill_daftar_hasil(args, ctx):
+    return generate_mod.list_generated()
 
 
 # --------------------------------------------------------------- registry ----
@@ -173,6 +220,41 @@ SKILLS = {
         "organ": "tangan", "risk": "konfirmasi", "params": [],
         "description": "Menghapus SEMUA catatan sesi ini. Merusak — wajib persetujuan manusia dulu.",
         "run": skill_hapus_catatan,
+    },
+    "ingat": {
+        "organ": "tangan", "risk": "aman", "params": ["fakta"],
+        "description": "Menyimpan satu fakta ke ingatan jangka panjang MEMORY.md (lintas sesi). Pakai saat pengguna berkata 'ingat ...'.",
+        "run": skill_ingat,
+    },
+    "baca_memori": {
+        "organ": "tangan", "risk": "aman", "params": [],
+        "description": "Membaca isi ingatan jangka panjang MEMORY.md.",
+        "run": skill_baca_memori,
+    },
+    "hapus_memori": {
+        "organ": "tangan", "risk": "konfirmasi", "params": [],
+        "description": "Menghapus SEMUA fakta di MEMORY.md. Merusak — wajib persetujuan manusia dulu.",
+        "run": skill_hapus_memori,
+    },
+    "buat_aplikasi_android": {
+        "organ": "tangan", "risk": "aman", "params": ["nama", "paket"],
+        "description": "Membuat proyek aplikasi Android Kotlin lengkap (gradle, manifest, MainActivity) dari template, siap dibuka di Android Studio.",
+        "run": skill_buat_aplikasi_android,
+    },
+    "buat_game_android": {
+        "organ": "tangan", "risk": "aman", "params": ["nama", "paket"],
+        "description": "Membuat proyek game Android Kotlin (Canvas 'Ketuk Target': skor + timer) lengkap, siap build di Android Studio.",
+        "run": skill_buat_game_android,
+    },
+    "buat_halaman_web": {
+        "organ": "tangan", "risk": "aman", "params": ["nama", "jenis"],
+        "description": "Membuat satu file index.html utuh. jenis: landing (default), game, atau kalkulator.",
+        "run": skill_buat_halaman_web,
+    },
+    "daftar_hasil_generate": {
+        "organ": "kaki", "risk": "aman", "params": [],
+        "description": "Mendaftar semua proyek yang pernah dibuat skill generator (Android/web).",
+        "run": skill_daftar_hasil,
     },
 }
 

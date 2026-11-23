@@ -5,7 +5,7 @@
 
     <application
         android:allowBackup="true"
-        android:label="Skeleton Meta AI"
+        android:label="Your Agent"
         android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
         android:usesCleartextTraffic="true">
         <!-- usesCleartextTraffic=true hanya untuk backend lokal (http) saat pengembangan.

@@ -1,4 +1,4 @@
-# Skeleton Meta AI — Kepala Meta AI + Badan Buatanmu
+# Your Agent — Kepala Meta AI + Badan Buatanmu
 
 Kerangka proyek **kosong tapi sudah jalan end-to-end**: tinggal kembangkan.
 Bukan aplikasi jadi — ini fondasi yang sudah nyambung dan bisa langsung dites kirim-terima pesan.
@@ -156,4 +156,18 @@ Server mengingat maks. 20 pesan terakhir per sesi, dan selalu menyisipkan
 - Pindah backend ke FastAPI/Node bila butuh fitur lebih — kontrak `/chat` di atas pertahankan saja.
 
 ---
-Skeleton oleh Kontenlaris Studio — fondasi, bukan produk jadi.
+Your Agent oleh Kontenlaris Studio — fondasi, bukan produk jadi.
+
+## Baru di v7 — Your Agent (nama baru, dulu Skeleton Meta AI)
+- **SOUL.md + MEMORY.md**: agen kini punya jati diri (backend/SOUL.md, persona "Skele")
+  dan ingatan jangka panjang lintas sesi (backend/data/MEMORY.md) — perintah
+  "ingat bahwa ..." menyimpannya, "apa yang kamu ingat" membacanya kembali,
+  "hapus memori" berhenti di gerbang konfirmasi.
+- **Tangan pembangun (13 skill)**: selain 6 skill lama, ada generator proyek —
+  "buatkan aplikasi android X" / "buatkan game android X" menghasilkan proyek
+  Kotlin lengkap, "buatkan halaman web X" menghasilkan index.html utuh
+  (landing/game/kalkulator) di backend/data/generated/.
+- **Backend live**: https://jawaadalah.pythonanywhere.com (PythonAnywhere gratis,
+  adapter backend/wsgi_app.py) dan jadi URL bawaan aplikasi Android.
+- **APK otomatis**: GitHub Actions (.github/workflows/android-apk.yml) mem-build
+  APK debug setiap push ke folder android/ — unduh dari tab Actions repo.

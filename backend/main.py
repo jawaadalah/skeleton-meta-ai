@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Backend Skeleton Meta AI v6 — Python stdlib saja, tanpa pip install.
+Backend Your Agent v7 — Python stdlib saja, tanpa pip install.
 
 Baru di v6 (penyimpanan permanen):
   A. Sesi percakapan tersimpan di backend/data/sessions.json (lihat store.py):
@@ -45,10 +45,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import agent as agent_mod
+import memory_store as memory_mod
 import skills as skills_mod
 import store as store_mod
 
-VERSION = "6.0"
+VERSION = "7.0"
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -80,6 +81,27 @@ APP_TOKEN = os.environ.get("APP_TOKEN", "").strip()
 
 _sessions = store_mod.load_sessions()  # v6: dimuat dari disk, bukan dict kosong
 _lock = threading.Lock()
+
+# v7: SOUL.md — jati diri agen, dibaca sekali saat start (edit file lalu restart).
+try:
+    SOUL_TEXT = (Path(__file__).resolve().parent / "SOUL.md").read_text(encoding="utf-8").strip()
+except Exception:
+    SOUL_TEXT = ""
+
+
+def _system_messages():
+    """Pesan system untuk LLM: prompt dasar + SOUL.md + ingatan MEMORY.md."""
+    msgs = []
+    prompt = SYSTEM_PROMPT
+    if SOUL_TEXT:
+        prompt = (prompt + "\n\n" + SOUL_TEXT).strip() if prompt else SOUL_TEXT
+    if prompt:
+        msgs.append({"role": "system", "content": prompt})
+    memory = memory_mod.load_text()
+    if memory:
+        msgs.append({"role": "system",
+                     "content": "Ingatan jangka panjangmu tentang pengguna (dari MEMORY.md):\n" + memory})
+    return msgs
 
 
 def get_session(session_id):
@@ -163,12 +185,23 @@ class Handler(BaseHTTPRequestHandler):
         self._json(200, {})
 
     def do_GET(self):
-        if self.path.rstrip("/") == "/skills":
+        path = self.path.rstrip("/")
+        if path in ("/soul", "/memory"):
+            if not self._authorized():
+                self._json(401, {"error": "token aplikasi salah atau tidak ada (header X-App-Token)"})
+                return
+            if path == "/soul":
+                self._json(200, {"soul": SOUL_TEXT, "version": VERSION})
+            else:
+                self._json(200, {"memory": memory_mod.read_full(), "version": VERSION})
+            return
+        if path == "/skills":
             self._json(200, {"skills": skills_mod.public_list(), "version": VERSION})
-        elif self.path.rstrip("/") in ("", "/health"):
+        elif path in ("", "/health"):
             self._json(200, {"status": "ok", "version": VERSION,
                               "mode": "mock" if MOCK else "live", "model": MODEL,
-                              "auth": bool(APP_TOKEN)})
+                              "auth": bool(APP_TOKEN), "soul": bool(SOUL_TEXT),
+                              "skills": len(skills_mod.SKILLS)})
         else:
             self._json(404, {"error": "not found"})
 
@@ -221,9 +254,7 @@ class Handler(BaseHTTPRequestHandler):
             history = [m for m in raw if isinstance(m, dict) and "role" in m and "content" in m]
 
         history_len = len(history)
-        messages = []
-        if SYSTEM_PROMPT:
-            messages.append({"role": "system", "content": SYSTEM_PROMPT})
+        messages = _system_messages()
         messages.extend(history[-MAX_HISTORY:])
         messages.append({"role": "user", "content": user_text})
 
@@ -256,6 +287,7 @@ class Handler(BaseHTTPRequestHandler):
         session_id = str(data.get("session_id", "")).strip()
         effective_session = session_id or "default"
         history = get_session(session_id) if session_id else []
+        agent_history = _system_messages() + list(history)
 
         confirm_token = str(data.get("confirm_token", "")).strip()
         if confirm_token:
@@ -279,7 +311,7 @@ class Handler(BaseHTTPRequestHandler):
 
         llm_call = None if MOCK else (lambda msgs: ask_meta(msgs))
         try:
-            result = agent_mod.run_agent(user_text, effective_session, history,
+            result = agent_mod.run_agent(user_text, effective_session, agent_history,
                                          llm_call, mock_reply)
         except Exception as e:
             self._json(502, {"error": "agen gagal berjalan", "detail": str(e)[:300]})
@@ -329,5 +361,5 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     mode = "MOCK (tanpa key)" if MOCK else f"LIVE (model {MODEL})"
-    print(f"Skeleton backend v{VERSION} jalan di http://0.0.0.0:{PORT} — mode: {mode}")
+    print(f"Your Agent backend v{VERSION} jalan di http://0.0.0.0:{PORT} — mode: {mode}")
     ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()

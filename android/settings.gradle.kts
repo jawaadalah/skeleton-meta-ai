@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "SkeletonMetaAI"
+rootProject.name = "YourAgent"
 include(":app")

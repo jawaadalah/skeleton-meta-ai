@@ -19,7 +19,7 @@ import java.util.UUID
 import java.util.concurrent.Executors
 
 /**
- * Skeleton Meta AI v5.
+ * Your Agent.
  *
  * Baru di v5 (Mode Agen):
  *  - Sakelar "Mode Agen": pesan dikirim ke /agent, bukan /chat/stream.
@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity() {
     private val prefs by lazy { getSharedPreferences("skeleton", MODE_PRIVATE) }
 
     private var backendUrl: String
-        get() = prefs.getString("backend_url", "http://10.0.2.2:8000")!!
+        get() = prefs.getString("backend_url", "https://jawaadalah.pythonanywhere.com")!!
         set(value) = prefs.edit().putString("backend_url", value).apply()
 
     private var appToken: String
@@ -276,7 +276,7 @@ class MainActivity : AppCompatActivity() {
     private fun askBackendUrl() {
         val urlInput = EditText(this).apply {
             setText(backendUrl)
-            hint = "Emulator: http://10.0.2.2:8000 | Publik: https://alamat-deploy-kamu"
+            hint = "Publik: https://jawaadalah.pythonanywhere.com | Emulator: http://10.0.2.2:8000"
         }
         val tokenInput = EditText(this).apply {
             setText(appToken)

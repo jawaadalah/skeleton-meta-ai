@@ -149,6 +149,59 @@ def test_persistence():
     print("OK  persistensi v6: sesi selamat dari restart server; /reset juga permanen")
 
 
+def test_v7():
+    """v7: SOUL.md, MEMORY.md jangka panjang, dan skill generator proyek."""
+    agent = lambda obj: call("POST", "/agent", obj)
+
+    health = call("GET", "/health")
+    assert health["version"] == "7.0" and health["soul"] is True, health
+    assert health["skills"] == 13, health
+    soul = call("GET", "/soul")["soul"]
+    assert "Skele" in soul, soul[:100]
+    print("OK  v7 /health: versi 7.0, SOUL.md termuat, 13 skill terdaftar; /soul terbaca")
+
+    r = agent({"message": "ingat bahwa warna favorit saya biru langit", "session_id": "v7-tes"})
+    assert r["steps"][0]["skill"] == "ingat", r
+    r = agent({"message": "apa yang kamu ingat tentang saya?", "session_id": "v7-tes"})
+    assert r["steps"][0]["skill"] == "baca_memori" and "biru langit" in r["reply"], r
+    mem = call("GET", "/memory")["memory"]
+    assert "biru langit" in mem, mem
+    print("OK  v7 memori: 'ingat bahwa ...' tersimpan di MEMORY.md dan terbaca lintas endpoint")
+
+    r = agent({"message": "buatkan aplikasi android Kasir Warung", "session_id": "v7-tes"})
+    assert r["steps"][0]["skill"] == "buat_aplikasi_android", r
+    proj = HERE / "data" / "generated" / "android" / "kasir-warung"
+    assert (proj / "app" / "src" / "main" / "AndroidManifest.xml").is_file(), proj
+    assert (proj / "settings.gradle.kts").is_file()
+    print("OK  v7 generator: proyek aplikasi Android 'Kasir Warung' terbuat lengkap (gradle+manifest)")
+
+    r = agent({"message": "buatkan game android Balap Kelereng", "session_id": "v7-tes"})
+    assert r["steps"][0]["skill"] == "buat_game_android", r
+    kt = list((HERE / "data" / "generated" / "android" / "balap-kelereng").rglob("MainActivity.kt"))
+    assert kt and "GameView" in kt[0].read_text(encoding="utf-8")
+    print("OK  v7 generator: proyek game Android terbuat dengan GameView Canvas")
+
+    r = agent({"message": "buatkan halaman web Toko Bunga Melati", "session_id": "v7-tes"})
+    assert r["steps"][0]["skill"] == "buat_halaman_web", r
+    html_file = HERE / "data" / "generated" / "web" / "toko-bunga-melati" / "index.html"
+    assert html_file.is_file() and "Toko Bunga Melati" in html_file.read_text(encoding="utf-8")
+    print("OK  v7 generator: halaman web landing terbuat sebagai index.html utuh")
+
+    r = agent({"message": "daftar proyek yang sudah dibuat", "session_id": "v7-tes"})
+    assert r["steps"][0]["skill"] == "daftar_hasil_generate" and "kasir-warung" in r["reply"], r
+    print("OK  v7 generator: daftar hasil generate menampilkan proyek-proyek tadi")
+
+    r = agent({"message": "hapus memori saya", "session_id": "v7-tes"})
+    assert r.get("needs_confirmation") and r.get("confirm_token"), r
+    masih = call("GET", "/memory")["memory"]
+    assert "biru langit" in masih, "memori tidak boleh terhapus sebelum konfirmasi!"
+    r2 = agent({"session_id": "v7-tes", "confirm_token": r["confirm_token"]})
+    assert "dihapus" in r2["reply"], r2
+    bersih = call("GET", "/memory")["memory"]
+    assert "biru langit" not in bersih, bersih
+    print("OK  v7 harness semi: hapus_memori berhenti di gerbang konfirmasi, lalu terhapus setelah disetujui")
+
+
 def test_token_auth():
     """Nyalakan server kedua di port 8001 dengan APP_TOKEN, cek gerbang 401-nya."""
     import os
@@ -210,6 +263,11 @@ def main():
         assert health and health["status"] == "ok", health
         print(f"OK  /health -> {health}")
 
+        # v7: sesi kini persisten di disk (v6) — bersihkan sesi uji dari run
+        # sebelumnya supaya hitungan pesannya deterministik.
+        call("POST", "/reset", {"session_id": "selftest"})
+        call("POST", "/reset", {"session_id": "stream-test"})
+
         res = call("POST", "/chat", {"message": "Halo, ini tes end-to-end."})
         assert res.get("reply"), res
         print(f"OK  /chat tanpa sesi -> mode={res.get('mode')}")
@@ -253,9 +311,10 @@ def main():
         print("OK  validasi: pesan kosong & terlalu panjang ditolak (400)")
 
         test_agent()
+        test_v7()
         test_token_auth()
         test_persistence()
-        print("SELFTEST v6 LULUS: chat + streaming + sesi + token + agen/skill + gerbang konfirmasi + persistensi jalan.")
+        print("SELFTEST v7 LULUS: chat + streaming + sesi + token + agen/skill + gerbang konfirmasi + persistensi + SOUL/MEMORY + generator proyek jalan.")
         return 0
     finally:
         proc.terminate()

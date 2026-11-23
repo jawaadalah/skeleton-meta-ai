@@ -40,6 +40,42 @@ def deterministic_route(message):
     if "hapus" in low and "catatan" in low:
         return "hapus_catatan", {}
 
+    # v7 — memori jangka panjang (MEMORY.md)
+    if any(w in low for w in ("hapus memori", "hapus ingatan", "lupakan semua")):
+        return "hapus_memori", {}
+
+    if low.startswith(("ingat:", "ingat bahwa ", "tolong ingat ", "ingat ya")):
+        fakta = re.sub(r"^(ingat[: ]+|tolong ingat[: ]+)", "", text, flags=re.I)
+        fakta = re.sub(r"^bahwa\s+", "", fakta.strip(), flags=re.I)
+        fakta = re.sub(r"\s*ya$", "", fakta.strip())
+        return "ingat", {"fakta": fakta.strip() or text}
+
+    if ("memori" in low or "ingatan" in low or "kamu ingat" in low) and \
+            any(w in low for w in ("baca", "lihat", "tampilkan", "apa", "ingat apa")):
+        return "baca_memori", {}
+
+    # v7 — generator proyek (Android / game / web) — nama diambil dari teks asli
+    # (bukan lowercase) supaya kapitalisasi judul proyek tetap benar.
+    m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?game\s+android\s*(.*)", text, flags=re.I)
+    if m:
+        return "buat_game_android", {"nama": m.group(1).strip(" :") or "Game Ketuk Target"}
+
+    m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?(?:aplikasi|app)\s+android\s*(.*)", text, flags=re.I)
+    if m:
+        return "buat_aplikasi_android", {"nama": m.group(1).strip(" :") or "AplikasiKu"}
+
+    m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?(?:halaman\s+web|website|situs\s+web|web)\s*(.*)", text, flags=re.I)
+    if m:
+        rest = m.group(1).strip(" :")
+        rest_low = rest.lower()
+        jenis = "game" if "game" in rest_low else ("kalkulator" if "kalkulator" in rest_low else "landing")
+        nama = re.sub(r"^(game|kalkulator)\s+", "", rest, flags=re.I).strip() or "Halamanku"
+        return "buat_halaman_web", {"nama": nama, "jenis": jenis}
+
+    if any(w in low for w in ("daftar proyek", "proyek yang sudah dibuat",
+                               "hasil generate", "daftar hasil")):
+        return "daftar_hasil_generate", {}
+
     if low.startswith(("catat:", "catat ", "simpan catatan")):
         teks = re.sub(r"^(catat[: ]+|simpan catatan[: ]+)", "", text, flags=re.I).strip()
         return "simpan_catatan", {"teks": teks or text}

@@ -78,7 +78,8 @@ def _handle_agent(environ, start_response):
 
     llm_call = None if bm.MOCK else (lambda msgs: bm.ask_meta(msgs))
     try:
-        result = bm.agent_mod.run_agent(user_text, effective_session, history,
+        result = bm.agent_mod.run_agent(user_text, effective_session,
+                                        bm._system_messages() + list(history),
                                         llm_call, bm.mock_reply)
     except Exception as e:
         return _json(start_response, 502, {"error": "agen gagal berjalan", "detail": str(e)[:300]})
@@ -111,9 +112,7 @@ def _handle_chat(environ, start_response, streaming):
         history = [m for m in raw if isinstance(m, dict) and "role" in m and "content" in m]
 
     history_len = len(history)
-    messages = []
-    if bm.SYSTEM_PROMPT:
-        messages.append({"role": "system", "content": bm.SYSTEM_PROMPT})
+    messages = bm._system_messages()
     messages.extend(history[-bm.MAX_HISTORY:])
     messages.append({"role": "user", "content": user_text})
 
@@ -163,6 +162,14 @@ def application(environ, start_response):
         return _json(start_response, 200, {})
 
     if method == "GET":
+        if path in ("/soul", "/memory"):
+            if bm.APP_TOKEN and environ.get("HTTP_X_APP_TOKEN", "") != bm.APP_TOKEN:
+                return _json(start_response, 401,
+                             {"error": "token aplikasi salah atau tidak ada (header X-App-Token)"})
+            if path == "/soul":
+                return _json(start_response, 200, {"soul": bm.SOUL_TEXT, "version": bm.VERSION})
+            return _json(start_response, 200,
+                         {"memory": bm.memory_mod.read_full(), "version": bm.VERSION})
         if path == "/skills":
             return _json(start_response, 200,
                          {"skills": bm.skills_mod.public_list(), "version": bm.VERSION})
@@ -170,7 +177,8 @@ def application(environ, start_response):
             return _json(start_response, 200,
                          {"status": "ok", "version": bm.VERSION,
                           "mode": "mock" if bm.MOCK else "live", "model": bm.MODEL,
-                          "auth": bool(bm.APP_TOKEN)})
+                          "auth": bool(bm.APP_TOKEN), "soul": bool(bm.SOUL_TEXT),
+                          "skills": len(bm.skills_mod.SKILLS)})
         return _json(start_response, 404, {"error": "not found"})
 
     if method == "POST":
