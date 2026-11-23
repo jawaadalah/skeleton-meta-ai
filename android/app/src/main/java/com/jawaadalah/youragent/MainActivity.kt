@@ -62,6 +62,8 @@ import java.util.concurrent.Executors
 class MainActivity : AppCompatActivity() {
 
     private lateinit var chatContainer: LinearLayout
+    private lateinit var quotaBar: LinearLayout
+    private lateinit var textQuotaLive: TextView
     private lateinit var scrollChat: ScrollView
     private lateinit var editMessage: EditText
     private lateinit var buttonSend: Button
@@ -317,6 +319,10 @@ class MainActivity : AppCompatActivity() {
         editMessage.background = roundedBg(theme.input, 24f)
         editMessage.setTextColor(theme.textPri)
         editMessage.setHintTextColor(theme.textSec)
+        if (::quotaBar.isInitialized) {
+            quotaBar.background = roundedBg(theme.surface, 0f)
+            textQuotaLive.setTextColor(theme.textSec)
+        }
     }
 
     /** Warna sakelar Mode Agen: hijau LIVE / merah MATI + label status. */
