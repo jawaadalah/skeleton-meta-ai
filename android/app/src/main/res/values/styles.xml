@@ -39,4 +39,52 @@
         <item name="android:statusBarColor">@color/bg_navy_deep</item>
         <item name="android:navigationBarColor">@color/bg_navy_deep</item>
     </style>
+
+    <!-- Kartu & field di layar Pengaturan (v11) -->
+    <style name="Widget.YourAgent.SettingsCard">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">14dp</item>
+        <item name="android:background">@drawable/bg_agent_bar</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:padding">16dp</item>
+    </style>
+
+    <style name="Widget.YourAgent.SettingsTitle">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Widget.YourAgent.SettingsLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">12dp</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">12.5sp</item>
+    </style>
+
+    <style name="Widget.YourAgent.SettingsHint">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">6dp</item>
+        <item name="android:textColor">@color/text_hint</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="Widget.YourAgent.SettingsField">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">6dp</item>
+        <item name="android:background">@drawable/bg_edit_pill</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingTop">11dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:paddingBottom">11dp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+        <item name="android:textSize">14sp</item>
+    </style>
 </resources>

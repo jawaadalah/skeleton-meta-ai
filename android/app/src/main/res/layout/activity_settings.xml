@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/settingsRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_app"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Kepala layar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/buttonBack"
+                style="@style/Widget.YourAgent.ChipButton"
+                android:background="@drawable/bg_agent_bar"
+                android:text="← Kembali" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:text="Pengaturan"
+                android:textColor="@color/text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Koneksi Server -->
+        <LinearLayout
+            style="@style/Widget.YourAgent.SettingsCard">
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsTitle"
+                android:text="Koneksi Server" />
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsLabel"
+                android:text="Alamat backend" />
+
+            <EditText
+                android:id="@+id/editBackendUrl"
+                style="@style/Widget.YourAgent.SettingsField"
+                android:hint="https://jawaadalah.pythonanywhere.com"
+                android:inputType="textUri" />
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsLabel"
+                android:text="Token aplikasi (bila backend memakai APP_TOKEN)" />
+
+            <EditText
+                android:id="@+id/editAppToken"
+                style="@style/Widget.YourAgent.SettingsField"
+                android:hint="Kosongkan bila tidak ada"
+                android:inputType="textPassword" />
+        </LinearLayout>
+
+        <!-- Otak AI -->
+        <LinearLayout
+            style="@style/Widget.YourAgent.SettingsCard">
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsTitle"
+                android:text="Otak AI (API)" />
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsHint"
+                android:text="Pakai API key milikmu sendiri untuk provider apa pun yang kompatibel OpenAI. Kosongkan untuk memakai bawaan server. Key tersimpan lokal di HP dan dikirim per permintaan — server tidak menyimpannya." />
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsLabel"
+                android:text="Provider" />
+
+            <Spinner
+                android:id="@+id/spinnerProvider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_edit_pill"
+                android:padding="6dp" />
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsLabel"
+                android:text="Base URL API" />
+
+            <EditText
+                android:id="@+id/editLlmBase"
+                style="@style/Widget.YourAgent.SettingsField"
+                android:hint="https://api.groq.com/openai/v1"
+                android:inputType="textUri" />
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsLabel"
+                android:text="Model" />
+
+            <EditText
+                android:id="@+id/editLlmModel"
+                style="@style/Widget.YourAgent.SettingsField"
+                android:hint="openai/gpt-oss-120b"
+                android:inputType="text" />
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsLabel"
+                android:text="API key" />
+
+            <EditText
+                android:id="@+id/editLlmKey"
+                style="@style/Widget.YourAgent.SettingsField"
+                android:hint="gsk_... / sk-... / kunci provider lain"
+                android:inputType="textPassword" />
+        </LinearLayout>
+
+        <!-- Fitur -->
+        <LinearLayout
+            style="@style/Widget.YourAgent.SettingsCard">
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsTitle"
+                android:text="Fitur" />
+
+            <Switch
+                android:id="@+id/switchAgentDefault"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:text="Mode Agen aktif sejak awal"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:thumbTint="@color/accent_cyan"
+                android:trackTint="@color/accent_violet" />
+
+            <Switch
+                android:id="@+id/switchStreaming"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:text="Streaming jawaban (teks muncul bertahap)"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:thumbTint="@color/accent_cyan"
+                android:trackTint="@color/accent_violet" />
+        </LinearLayout>
+
+        <!-- Tentang -->
+        <LinearLayout
+            style="@style/Widget.YourAgent.SettingsCard">
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsTitle"
+                android:text="Tentang Aplikasi" />
+
+            <TextView
+                android:id="@+id/textAbout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="6dp"
+                android:lineSpacingMultiplier="1.15"
+                android:textColor="@color/text_secondary"
+                android:textSize="13.5sp" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/buttonSaveSettings"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/btn_send"
+            android:text="Simpan Pengaturan"
+            android:textAllCaps="false"
+            android:textColor="@color/text_on_gradient"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+</ScrollView>

@@ -1,6 +1,7 @@
 package com.jawaadalah.youragent
 
 import android.app.AlertDialog
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
@@ -112,19 +113,26 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
+        findViewById<Switch>(R.id.switchAgent).isChecked = prefs.getBoolean("agent_default", false)
         buttonSend.setOnClickListener { trySend() }
         editMessage.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEND) { trySend(); true } else false
         }
         findViewById<Button>(R.id.buttonClear).setOnClickListener { clearChat() }
-        findViewById<Button>(R.id.buttonUrl).setOnClickListener { askBackendUrl() }
+        findViewById<Button>(R.id.buttonSettings).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
     }
 
     private fun trySend() {
         val text = editMessage.text.toString().trim()
         if (text.isEmpty() || !buttonSend.isEnabled) return
         editMessage.text.clear()
-        if (findViewById<Switch>(R.id.switchAgent).isChecked) sendAgent(text) else sendMessage(text)
+        when {
+            findViewById<Switch>(R.id.switchAgent).isChecked -> sendAgent(text)
+            prefs.getBoolean("streaming", true) -> sendMessage(text)
+            else -> sendMessageOnce(text)
+        }
     }
 
     private fun setBusy(busy: Boolean) {
@@ -151,6 +159,60 @@ class MainActivity : AppCompatActivity() {
     private fun stopTyping() {
         typingRunnable?.let { uiHandler.removeCallbacks(it) }
         typingRunnable = null
+    }
+
+
+    /** Objek "llm" untuk body request (v11): override otak AI dari Pengaturan.
+     *  null bila semua kosong (pakai bawaan server). */
+    private fun llmOverrideJson(): JSONObject? {
+        val base = prefs.getString("llm_base_url", "")!!.trim()
+        val model = prefs.getString("llm_model", "")!!.trim()
+        val key = prefs.getString("llm_api_key", "")!!.trim()
+        if (base.isEmpty() && model.isEmpty() && key.isEmpty()) return null
+        val obj = JSONObject()
+        if (base.isNotEmpty()) obj.put("base_url", base)
+        if (model.isNotEmpty()) obj.put("model", model)
+        if (key.isNotEmpty()) obj.put("api_key", key)
+        return obj
+    }
+
+    /** Chat sekali kirim (streaming mati di Pengaturan): POST /chat biasa. */
+    private fun sendMessageOnce(text: String) {
+        addBubble(text, fromUser = true, save = true)
+        setBusy(true)
+        val bubble = addBubble("", fromUser = false, save = false)
+        startTyping(bubble, "Skele sedang berpikir")
+        executor.execute {
+            val display = try {
+                val body = JSONObject().put("message", text).put("session_id", sessionId)
+                llmOverrideJson()?.let { body.put("llm", it) }
+                val conn = URL("$backendUrl/chat").openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json")
+                if (appToken.isNotEmpty()) conn.setRequestProperty("X-App-Token", appToken)
+                conn.connectTimeout = 15_000
+                conn.readTimeout = 120_000
+                conn.doOutput = true
+                conn.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+                val stream = if (conn.responseCode in 200..299) conn.inputStream else conn.errorStream
+                val response = stream?.bufferedReader()?.use { it.readText() } ?: ""
+                val json = try { JSONObject(response) } catch (_: Exception) { JSONObject() }
+                if (conn.responseCode !in 200..299) {
+                    throw IllegalStateException("Backend ${conn.responseCode}: ${json.optString("error", response)}")
+                }
+                json.optString("reply", "(jawaban kosong dari backend)")
+            } catch (e: Exception) {
+                friendlyError(e)
+            }
+            runOnUiThread {
+                stopTyping()
+                setBubbleFormatted(bubble, display)
+                shown.add(false to display)
+                saveChat()
+                setBusy(false)
+                scrollChat.post { scrollChat.fullScroll(ScrollView.FOCUS_DOWN) }
+            }
+        }
     }
 
     // ------------------------------------------------------------- chat SSE --
@@ -194,7 +256,9 @@ class MainActivity : AppCompatActivity() {
 
     /** POST /chat/stream — baca SSE: data {"chunk"} / {"done"} / {"error"}. */
     private fun streamChat(text: String, onChunk: (String) -> Unit) {
-        val body = JSONObject().put("message", text).put("session_id", sessionId).toString()
+        val bodyObj = JSONObject().put("message", text).put("session_id", sessionId)
+        llmOverrideJson()?.let { bodyObj.put("llm", it) }
+        val body = bodyObj.toString()
         val conn = URL("$backendUrl/chat/stream").openConnection() as HttpURLConnection
         conn.requestMethod = "POST"
         conn.setRequestProperty("Content-Type", "application/json")
@@ -290,6 +354,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun postAgent(body: JSONObject): JSONObject {
+        if (!body.has("llm")) llmOverrideJson()?.let { body.put("llm", it) }
         val conn = URL("$backendUrl/agent").openConnection() as HttpURLConnection
         conn.requestMethod = "POST"
         conn.setRequestProperty("Content-Type", "application/json")
@@ -326,32 +391,6 @@ class MainActivity : AppCompatActivity() {
             } catch (_: Exception) { /* backend mati pun layar tetap dibersihkan */ }
         }
         addBubble("Chat dibersihkan. Kita mulai dari awal.", fromUser = false, save = true)
-    }
-
-    private fun askBackendUrl() {
-        val urlInput = EditText(this).apply {
-            setText(backendUrl)
-            hint = "Publik: https://jawaadalah.pythonanywhere.com | Emulator: http://10.0.2.2:8000"
-        }
-        val tokenInput = EditText(this).apply {
-            setText(appToken)
-            hint = "Token aplikasi (kosongkan bila backend lokal tanpa APP_TOKEN)"
-        }
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(48, 16, 48, 8)
-            addView(urlInput)
-            addView(tokenInput)
-        }
-        AlertDialog.Builder(this)
-            .setTitle("Alamat backend & token")
-            .setView(container)
-            .setPositiveButton("Simpan") { _, _ ->
-                backendUrl = urlInput.text.toString().trim().trimEnd('/')
-                appToken = tokenInput.text.toString().trim()
-            }
-            .setNegativeButton("Batal", null)
-            .show()
     }
 
     // ------------------------------------------------------------ bubble UI --

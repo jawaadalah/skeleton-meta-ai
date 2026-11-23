@@ -154,11 +154,11 @@ def test_v7():
     agent = lambda obj: call("POST", "/agent", obj)
 
     health = call("GET", "/health")
-    assert health["version"] == "10.0" and health["soul"] is True, health
+    assert health["version"] == "11.0" and health["soul"] is True, health
     assert health["skills"] == 15, health
     soul = call("GET", "/soul")["soul"]
     assert "Skele" in soul, soul[:100]
-    print("OK  v7 /health: versi 10.0, SOUL.md termuat, 15 skill terdaftar; /soul terbaca")
+    print("OK  v7 /health: versi 11.0, SOUL.md termuat, 15 skill terdaftar; /soul terbaca")
 
     r = agent({"message": "ingat bahwa warna favorit saya biru langit", "session_id": "v7-tes"})
     assert r["steps"][0]["skill"] == "ingat", r
@@ -268,6 +268,76 @@ def test_v8():
     assert r["steps"][0]["skill"] == "cek_apk", r
     print("OK  v8 router: 'cek apk <slug>' -> cek_apk")
 
+
+def test_v11():
+    """v11: override LLM per-request — backend memakai base_url/model/api_key
+    kiriman aplikasi (stub OpenAI-compatible lokal), bukan env server."""
+    import threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    seen = {}
+
+    class Stub(BaseHTTPRequestHandler):
+        def do_POST(self):
+            body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))))
+            seen["auth"] = self.headers.get("Authorization", "")
+            seen["model"] = body.get("model", "")
+            out = {"choices": [{"message": {"content": "JAWABAN-STUB-11"}}]}
+            raw = json.dumps(out).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(raw)))
+            self.end_headers()
+            self.wfile.write(raw)
+
+        def log_message(self, *a):
+            pass
+
+    stub = ThreadingHTTPServer(("127.0.0.1", 8899), Stub)
+    threading.Thread(target=stub.serve_forever, daemon=True).start()
+
+    import os
+    env = dict(os.environ, PORT="8002", META_API_KEY="kunci-env-server",
+               META_API_BASE_URL="http://127.0.0.1:9/mati", META_MODEL="model-env")
+    env.pop("MOCK_MODE", None)
+    proc = subprocess.Popen([sys.executable, str(HERE / "main.py")],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                            text=True, env=env)
+    base = "http://127.0.0.1:8002"
+    try:
+        for _ in range(50):
+            try:
+                req = urllib.request.Request(base + "/health")
+                with urllib.request.urlopen(req, timeout=5) as r:
+                    health = json.loads(r.read().decode("utf-8"))
+                break
+            except Exception:
+                time.sleep(0.2)
+        else:
+            raise AssertionError("server v11 tidak menyala")
+        assert health["mode"] == "live", health
+        req = urllib.request.Request(
+            base + "/chat", method="POST",
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({"message": "halo",
+                             "llm": {"base_url": "http://127.0.0.1:8899/v1",
+                                     "model": "stub-model",
+                                     "api_key": "kunci-aplikasi"}}).encode("utf-8"))
+        with urllib.request.urlopen(req, timeout=10) as r:
+            resp = json.loads(r.read().decode("utf-8"))
+        assert "JAWABAN-STUB-11" in resp.get("reply", ""), resp
+        assert seen.get("auth") == "Bearer kunci-aplikasi", seen
+        assert seen.get("model") == "stub-model", seen
+        print("OK  v11 override LLM: base_url+model+api_key dari aplikasi dipakai (stub membuktikan), env server tidak dipakai")
+    finally:
+        proc.terminate()
+        stub.shutdown()
+        try:
+            proc.wait(timeout=5)
+        except Exception:
+            proc.kill()
+
+
 def main():
     proc = subprocess.Popen([sys.executable, str(HERE / "main.py")],
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
@@ -332,6 +402,7 @@ def main():
         test_agent()
         test_v7()
         test_v8()
+        test_v11()
         test_token_auth()
         test_persistence()
         print("SELFTEST v7 LULUS: chat + streaming + sesi + token + agen/skill + gerbang konfirmasi + persistensi + SOUL/MEMORY + generator proyek jalan.")

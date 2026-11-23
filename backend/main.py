@@ -49,7 +49,7 @@ import memory_store as memory_mod
 import skills as skills_mod
 import store as store_mod
 
-VERSION = "10.0"
+VERSION = "11.0"
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -109,13 +109,33 @@ def get_session(session_id):
         return _sessions.setdefault(session_id, [])
 
 
+
+def _llm_cfg(override=None):
+    """Konfigurasi LLM efektif (v11): override per-request dari aplikasi
+    (base_url/model/api_key gaya OpenAI-compatible) menang atas env server.
+    Dipakai sesaat untuk request itu saja — TIDAK disimpan/ dicatat server."""
+    cfg = {"base_url": BASE_URL, "model": MODEL, "api_key": API_KEY}
+    if isinstance(override, dict):
+        base = str(override.get("base_url", "")).strip().rstrip("/")
+        if base.startswith(("https://", "http://")):
+            cfg["base_url"] = base
+        model = str(override.get("model", "")).strip()
+        if model:
+            cfg["model"] = model
+        key = str(override.get("api_key", "")).strip()
+        if key:
+            cfg["api_key"] = key
+    return cfg
+
+
 # UA browser wajib: Cloudflare di depan Groq menolak UA bawaan Python-urllib (403).
-def ask_meta(messages):
-    payload = json.dumps({"model": MODEL, "messages": messages}).encode("utf-8")
+def ask_meta(messages, override=None):
+    cfg = _llm_cfg(override)
+    payload = json.dumps({"model": cfg["model"], "messages": messages}).encode("utf-8")
     req = urllib.request.Request(
-        f"{BASE_URL}/chat/completions",
+        f"{cfg['base_url']}/chat/completions",
         data=payload,
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {API_KEY}", "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"},
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {cfg['api_key']}", "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"},
         method="POST",
     )
     with urllib.request.urlopen(req, timeout=60) as resp:
@@ -123,13 +143,14 @@ def ask_meta(messages):
     return data["choices"][0]["message"]["content"]
 
 
-def stream_meta(messages):
-    """Yield potongan teks dari Llama API dengan stream=true (SSE hulu)."""
-    payload = json.dumps({"model": MODEL, "messages": messages, "stream": True}).encode("utf-8")
+def stream_meta(messages, override=None):
+    """Yield potongan teks dari API gaya OpenAI dengan stream=true (SSE hulu)."""
+    cfg = _llm_cfg(override)
+    payload = json.dumps({"model": cfg["model"], "messages": messages, "stream": True}).encode("utf-8")
     req = urllib.request.Request(
-        f"{BASE_URL}/chat/completions",
+        f"{cfg['base_url']}/chat/completions",
         data=payload,
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {API_KEY}", "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"},
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {cfg['api_key']}", "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"},
         method="POST",
     )
     with urllib.request.urlopen(req, timeout=120) as resp:
@@ -260,14 +281,14 @@ class Handler(BaseHTTPRequestHandler):
         messages.append({"role": "user", "content": user_text})
 
         if streaming:
-            self._stream(user_text, messages, history, session_id, history_len)
+            self._stream(user_text, messages, history, session_id, history_len, data.get("llm"))
             return
 
         if MOCK:
             reply = mock_reply(user_text, history_len)
         else:
             try:
-                reply = ask_meta(messages)
+                reply = ask_meta(messages, data.get("llm"))
             except urllib.error.HTTPError as e:
                 detail = e.read().decode("utf-8", "replace")[:300]
                 self._json(502, {"error": f"Meta API menjawab {e.code}", "detail": detail})
@@ -310,7 +331,7 @@ class Handler(BaseHTTPRequestHandler):
             self._json(400, {"error": f"pesan terlalu panjang (maks {MAX_CHARS} karakter)"})
             return
 
-        llm_call = None if MOCK else (lambda msgs: ask_meta(msgs))
+        llm_call = None if MOCK else (lambda msgs: ask_meta(msgs, data.get("llm")))
         try:
             result = agent_mod.run_agent(user_text, effective_session, agent_history,
                                          llm_call, mock_reply)
@@ -337,7 +358,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(line)
         self.wfile.flush()
 
-    def _stream(self, user_text, messages, history, session_id, history_len):
+    def _stream(self, user_text, messages, history, session_id, history_len, llm_override=None):
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream; charset=utf-8")
         self.send_header("Cache-Control", "no-cache")
@@ -345,7 +366,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         parts = []
         try:
-            chunks = stream_mock(user_text, history_len) if MOCK else stream_meta(messages)
+            chunks = stream_mock(user_text, history_len) if MOCK else stream_meta(messages, llm_override)
             for chunk in chunks:
                 parts.append(chunk)
                 self._sse({"chunk": chunk})

@@ -42,9 +42,9 @@
         </LinearLayout>
 
         <Button
-            android:id="@+id/buttonUrl"
+            android:id="@+id/buttonSettings"
             style="@style/Widget.YourAgent.ChipButton"
-            android:text="URL" />
+            android:text="⚙ Atur" />
 
         <Button
             android:id="@+id/buttonClear"
