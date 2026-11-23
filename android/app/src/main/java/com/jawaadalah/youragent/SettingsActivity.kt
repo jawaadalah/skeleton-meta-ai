@@ -171,7 +171,7 @@ class SettingsActivity : AppCompatActivity() {
             "Your Agent v$versionName — asisten AI pribadi dengan Mode Agen dan Pabrik APK.\n\n" +
                 "Fitur utama:\n" +
                 "• Chat streaming dengan otak AI pilihanmu (BYOK: Groq, OpenRouter, OpenAI, Gemini, atau server sendiri)\n" +
-                "• Mode Agen: 16 skill — kalkulator, catatan, ingatan jangka panjang, ambil web, generator proyek, pabrik APK, n8n\n" +
+                "• Mode Agen: 16 skill — kalkulator, catatan, ingatan jangka panjang, ambil web, generator proyek, pabrik APK, skill inti fullstack\n" +
                 "• Pabrik APK: buat aplikasi & game Android jadi file APK asli dari chat\n" +
                 "• Generator Cerdas: kode ditulis AI mengikuti instruksimu, dicek validator, fallback template\n" +
                 "• Info token per balasan + sisa kuota backend live (strip di layar utama & kartu Kuota di sini)\n" +

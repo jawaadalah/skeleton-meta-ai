@@ -168,14 +168,14 @@ def test_v7():
     assert "biru langit" in mem, mem
     print("OK  v7 memori: 'ingat bahwa ...' tersimpan di MEMORY.md dan terbaca lintas endpoint")
 
-    r = agent({"message": "buatkan aplikasi android Kasir Warung", "session_id": "v7-tes"})
+    r = agent({"message": "buatkan aplikasi android Kasir Warung proyek saja", "session_id": "v7-tes"})
     assert r["steps"][0]["skill"] == "buat_aplikasi_android", r
     proj = HERE / "data" / "generated" / "android" / "kasir-warung"
     assert (proj / "app" / "src" / "main" / "AndroidManifest.xml").is_file(), proj
     assert (proj / "settings.gradle.kts").is_file()
     print("OK  v7 generator: proyek aplikasi Android 'Kasir Warung' terbuat lengkap (gradle+manifest)")
 
-    r = agent({"message": "buatkan game android Balap Kelereng", "session_id": "v7-tes"})
+    r = agent({"message": "buatkan game android Balap Kelereng proyek saja", "session_id": "v7-tes"})
     assert r["steps"][0]["skill"] == "buat_game_android", r
     kt = list((HERE / "data" / "generated" / "android" / "balap-kelereng").rglob("MainActivity.kt"))
     assert kt and "GameView" in kt[0].read_text(encoding="utf-8")
@@ -191,7 +191,7 @@ def test_v7():
     assert r["steps"][0]["skill"] == "daftar_hasil_generate" and "kasir-warung" in r["reply"], r
     print("OK  v7 generator: daftar hasil generate menampilkan proyek-proyek tadi")
 
-    r = agent({"message": "buat aplikasi game simpel", "session_id": "v7-tes"})
+    r = agent({"message": "buat aplikasi game simpel proyek saja", "session_id": "v7-tes"})
     assert r["steps"] and r["steps"][0]["skill"] == "buat_game_android", r
     print("OK  v7.1 router natural: 'buat aplikasi game simpel' -> buat_game_android (kasus nyata dari HP pengguna)")
 
@@ -385,12 +385,28 @@ def test_v11():
         # menghasilkan proyek bernama "nya"; nama sah harus tetap lolos utuh.
         import agent as _agent
         r = _agent.deterministic_route("Buat gamenya")
-        assert r and r[0] == "buat_game_android" and r[1]["nama"] == "Game Ketuk Target", r
+        assert r and r[0] == "buat_apk_android" and r[1]["nama"] == "Game Ketuk Target", r
         r = _agent.deterministic_route("buatkan game android Perang Bintang: pesawat menembak asteroid")
         assert r and r[1]["nama"] == "Perang Bintang", r
         r = _agent.deterministic_route("buatkan aplikasi android Kasir Warung")
         assert r and r[1]["nama"] == "Kasir Warung", r
         print("OK  v1.0.0 router: nama proyek sampah ditolak, nama sah tetap lolos")
+        # v1.0.0+ — buat Android langsung jadi APK; fullstack; n8n dihapus.
+        r = _agent.deterministic_route("buatkan game android Balap Kelereng")
+        assert r and r[0] == "buat_apk_android" and r[1]["jenis"] == "game" and r[1]["nama"] == "Balap Kelereng", r
+        r = _agent.deterministic_route("buatkan aplikasi android Kasir Warung")
+        assert r and r[0] == "buat_apk_android" and r[1]["jenis"] == "aplikasi", r
+        r = _agent.deterministic_route("buatkan game android Balap Kelereng proyek saja")
+        assert r and r[0] == "buat_game_android" and r[1]["nama"] == "Balap Kelereng", r
+        r = _agent.deterministic_route("buatkan fullstack Toko Online")
+        assert r and r[0] == "inti_fullstack" and r[1]["nama"] == "Toko Online", r
+        assert _agent.deterministic_route("n8n: halo") is None
+        import skills as _skills
+        assert "kirim_ke_n8n" not in _skills.SKILLS and "inti_fullstack" in _skills.SKILLS, list(_skills.SKILLS)
+        assert len(_skills.SKILLS) == 16, len(_skills.SKILLS)
+        out, is_err = _skills.execute("inti_fullstack", {"nama": "Uji Fullstack", "deskripsi": "uji"}, {"session_id": "t", "llm": None})
+        assert not is_err and "fullstack/uji-fullstack" in out, out
+        print("OK  v1.0.0+ router langsung APK + skill inti fullstack jalan + n8n terhapus (16 skill)")
 
     finally:
         proc.terminate()

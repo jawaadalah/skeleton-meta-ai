@@ -45,6 +45,8 @@ def _clean_name(raw, default):
     """
     nama = " ".join(str(raw or "").split()).strip(" :,'\"")
     nama = nama.split(":")[0].strip(" ,")
+    nama = re.sub(r"\b(proyek saja|kode saja|tanpa apk)\b", "", nama,
+                  flags=re.I).strip(" ,")
     if len(nama) < 3 or nama.lower() in _JUNK_NAMES:
         return default
     return nama
@@ -73,6 +75,18 @@ def deterministic_route(message):
             any(w in low for w in ("baca", "lihat", "tampilkan", "apa", "ingat apa")):
         return "baca_memori", {}
 
+    # v1.0.0 — skill inti fullstack: "buatkan fullstack X" / "fullstack: X"
+    m = re.search(r"(?:buat(?:kan)?|bikin(?:kan)?|buatin|bikinin)\s+(?:saya\s+)?(?:aplikasi\s+|web\s*app\s+|sistem\s+)?fullstack\s*(.*)", text, flags=re.I)
+    if m:
+        return "inti_fullstack", {"nama": _clean_name(m.group(1), "Aplikasi Fullstack"), "deskripsi": text}
+    m = re.match(r"fullstack\s*[: ]\s*(.+)", text, flags=re.I)
+    if m:
+        return "inti_fullstack", {"nama": _clean_name(m.group(1), "Aplikasi Fullstack"), "deskripsi": text}
+
+    # "proyek saja/kode saja/tanpa apk" = pengguna eksplisit TIDAK mau APK.
+    proyek_saja = any(w in low for w in ("proyek saja", "kode saja", "tanpa apk",
+                                         "jangan jadi apk", "tidak jadi apk"))
+
     # v8 — pabrik APK: bila ada kata "apk", arahkan ke skill pembuat APK
     # (bukan sekadar proyek). Pola ini harus dicek sebelum generator biasa.
     m = re.search(r"cek\s+apk\s+([\w-]+)", low)
@@ -95,13 +109,19 @@ def deterministic_route(message):
 
     # v7 — generator proyek (Android / game / web) — nama diambil dari teks asli
     # (bukan lowercase) supaya kapitalisasi judul proyek tetap benar.
-    m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?game\s+android\s*(.*)", text, flags=re.I)
+    m = re.search(r"(?:buat(?:kan)?|bikin(?:kan)?|buatin|bikinin)\s+(?:saya\s+)?game\s+android\s*(.*)", text, flags=re.I)
     if m:
-        return "buat_game_android", {"nama": _clean_name(m.group(1), "Game Ketuk Target"), "deskripsi": text}
+        nama = _clean_name(m.group(1), "Game Ketuk Target")
+        if proyek_saja:
+            return "buat_game_android", {"nama": nama, "deskripsi": text}
+        return "buat_apk_android", {"nama": nama, "jenis": "game", "deskripsi": text}
 
-    m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?(?:aplikasi|app)\s+android\s*(.*)", text, flags=re.I)
+    m = re.search(r"(?:buat(?:kan)?|bikin(?:kan)?|buatin|bikinin)\s+(?:saya\s+)?(?:aplikasi|app)\s+android\s*(.*)", text, flags=re.I)
     if m:
-        return "buat_aplikasi_android", {"nama": _clean_name(m.group(1), "AplikasiKu"), "deskripsi": text}
+        nama = _clean_name(m.group(1), "AplikasiKu")
+        if proyek_saja:
+            return "buat_aplikasi_android", {"nama": nama, "deskripsi": text}
+        return "buat_apk_android", {"nama": nama, "jenis": "aplikasi", "deskripsi": text}
 
     m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?(?:halaman\s+web|website|situs\s+web|web)\s*(.*)", text, flags=re.I)
     if m:
@@ -118,22 +138,20 @@ def deterministic_route(message):
 
     # v7.1 — frasa natural tanpa kata "android"/"web" (dari pemakaian nyata:
     # "buat aplikasi game simpel" dulu jatuh ke echo mock dan membingungkan).
-    m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?(?:aplikasi\s+)?game\s*(.*)", text, flags=re.I)
+    m = re.search(r"(?:buat(?:kan)?|bikin(?:kan)?|buatin|bikinin)\s+(?:saya\s+)?(?:aplikasi\s+)?game\s*(.*)", text, flags=re.I)
     if m:
         nama = re.sub(r"\b(simpel|sederhana|simple)\b", "", m.group(1), flags=re.I).strip(" :")
-        return "buat_game_android", {"nama": _clean_name(nama, "Game Ketuk Target"), "deskripsi": text}
+        nama = _clean_name(nama, "Game Ketuk Target")
+        if proyek_saja:
+            return "buat_game_android", {"nama": nama, "deskripsi": text}
+        return "buat_apk_android", {"nama": nama, "jenis": "game", "deskripsi": text}
 
-    m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?aplikasi\s+(.+)", text, flags=re.I)
+    m = re.search(r"(?:buat(?:kan)?|bikin(?:kan)?|buatin|bikinin)\s+(?:saya\s+)?aplikasi\s+(.+)", text, flags=re.I)
     if m:
-        return "buat_aplikasi_android", {"nama": _clean_name(m.group(1), "AplikasiKu"), "deskripsi": text}
-
-    # v11 — integrasi n8n: "n8n: <teks>", "otomasi: <teks>", "kirim ke n8n <teks>"
-    m = re.match(r"(?:n8n|otomasi)\s*:\s*(.+)", text, flags=re.I | re.S)
-    if m:
-        return "kirim_ke_n8n", {"aksi": "perintah", "teks": m.group(1).strip()}
-    m = re.match(r"kirim\s+ke\s+n8n\s*[: ]\s*(.+)", text, flags=re.I | re.S)
-    if m:
-        return "kirim_ke_n8n", {"aksi": "perintah", "teks": m.group(1).strip()}
+        nama = _clean_name(m.group(1), "AplikasiKu")
+        if proyek_saja:
+            return "buat_aplikasi_android", {"nama": nama, "deskripsi": text}
+        return "buat_apk_android", {"nama": nama, "jenis": "aplikasi", "deskripsi": text}
 
     if low.startswith(("catat:", "catat ", "simpan catatan")):
         teks = re.sub(r"^(catat[: ]+|simpan catatan[: ]+)", "", text, flags=re.I).strip()
@@ -265,7 +283,7 @@ BUSY_REPLY = (
 
 
 _VERBATIM_SKILLS = {"buat_apk_android", "buat_aplikasi_android", "buat_game_android",
-                    "buat_halaman_web", "cek_apk", "kirim_ke_n8n"}
+                    "buat_halaman_web", "cek_apk", "inti_fullstack"}
 
 
 def _compose(message, steps, history, llm_call, mock_reply_fn):
@@ -298,7 +316,10 @@ def _ask_plan(llm_call, convo, steps):
         "Balas HANYA dengan JSON salah satu bentuk:\n"
         '{"action": "answer", "reply": "jawaban final untuk pengguna"}\n'
         '{"action": "skill", "skill": "nama_skill", "args": {"param": "nilai"}}\n'
-        "Untuk skill generator (buat_aplikasi_android, buat_game_android, buat_halaman_web, buat_apk_android), selalu isi param deskripsi dengan instruksi lengkap pengguna agar hasilnya disesuaikan AI mengikuti instruksinya."
+        "Aturan memilih skill: (1) Permintaan membuat game/aplikasi Android SELALU pakai buat_apk_android (langsung jadi APK); buat_game_android/buat_aplikasi_android hanya bila pengguna eksplisit minta proyek/kode saja tanpa APK. "
+        "(2) Permintaan aplikasi fullstack / web app dengan backend / sistem lengkap pakai inti_fullstack. "
+        "(3) Untuk semua skill pembangun (buat_apk_android, buat_halaman_web, inti_fullstack, buat_game_android, buat_aplikasi_android), selalu isi param deskripsi dengan instruksi lengkap pengguna agar kode ditulis AI mengikuti instruksinya. "
+        "(4) Manfaatkan konteks percakapan & ingatan untuk melengkapi nama/deskripsi yang kurang jelas, jangan bertanya balik hal yang bisa disimpulkan."
         "Jangan tulis teks lain di luar JSON."
     )
     try:

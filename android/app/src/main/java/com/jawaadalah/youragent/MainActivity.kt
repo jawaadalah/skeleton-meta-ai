@@ -469,11 +469,6 @@ class MainActivity : AppCompatActivity() {
                 val json = postAgent(JSONObject().put("message", text).put("session_id", sessionId))
                 quotaObj = json.optJSONObject("quota")
                 display = json.optString("reply", "(tanpa jawaban)")
-                val steps = json.optJSONArray("steps")
-                if (steps != null && steps.length() > 0) {
-                    val names = (0 until steps.length()).map { steps.getJSONObject(it).optString("skill") }
-                    display += "\n\n— Log proses:\n" + names.joinToString("\n") { "✓ " + it + " — selesai" }
-                }
                 json.optJSONObject("usage")?.let { display += tokenLine(it) }
                 if (json.optBoolean("needs_confirmation")) {
                     confirmToken = json.optString("confirm_token")

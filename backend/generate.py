@@ -444,7 +444,7 @@ def list_generated():
     if not GEN_DIR.is_dir():
         return "Belum ada proyek hasil generate."
     items = []
-    for kind in ("android", "web"):
+    for kind in ("android", "web", "fullstack"):
         root = GEN_DIR / kind
         if root.is_dir():
             for child in sorted(root.iterdir()):
@@ -452,3 +452,127 @@ def list_generated():
                     n = sum(1 for _ in child.rglob("*") if _.is_file())
                     items.append(f"- [{kind}] {child.name} ({n} file)")
     return "Proyek hasil generate:\n" + "\n".join(items) if items else "Belum ada proyek hasil generate."
+
+
+# ------------------------------------------------------------- fullstack -----
+_FULLSTACK_SERVER = '''#!/usr/bin/env python3
+"""__TITLE__ - server fullstack (Python stdlib saja, tanpa pip install)."""
+import json
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
+ITEMS = []
+HERE = Path(__file__).resolve().parent
+
+
+class Handler(BaseHTTPRequestHandler):
+    def _json(self, code, obj):
+        raw = json.dumps(obj).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(raw)))
+        self.end_headers()
+        self.wfile.write(raw)
+
+    def do_GET(self):
+        if self.path == "/api/items":
+            self._json(200, {"items": ITEMS})
+        elif self.path in ("/", "/index.html"):
+            raw = (HERE / "index.html").read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(raw)))
+            self.end_headers()
+            self.wfile.write(raw)
+        else:
+            self._json(404, {"error": "tidak ditemukan"})
+
+    def do_POST(self):
+        if self.path != "/api/items":
+            self._json(404, {"error": "tidak ditemukan"})
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+            data = json.loads(self.rfile.read(length) or b"{}")
+        except Exception:
+            data = {}
+        nama = str(data.get("nama", "")).strip()
+        if not nama:
+            self._json(400, {"error": "field nama wajib diisi"})
+            return
+        ITEMS.append({"nama": nama})
+        self._json(201, {"items": ITEMS})
+
+    def log_message(self, *args):
+        pass
+
+
+if __name__ == "__main__":
+    print("__TITLE__ jalan di http://localhost:8000")
+    ThreadingHTTPServer(("0.0.0.0", 8000), Handler).serve_forever()
+'''
+
+_FULLSTACK_HTML = '''<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#0b1220;color:#e8eefc;margin:0;padding:24px}
+.card{max-width:560px;margin:0 auto;background:#131c31;border:1px solid #26355c;border-radius:16px;padding:20px}
+input,button{padding:10px 12px;border-radius:10px;border:1px solid #2c3d66;font-size:15px}
+input{background:#0b1220;color:#e8eefc;width:65%}
+button{background:#2563eb;color:#fff;cursor:pointer}
+li{margin:6px 0}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>__TITLE__</h1>
+<p>Frontend ini memanggil API backend-nya sendiri (<code>/api/items</code>).</p>
+<input id="nama" placeholder="Tulis item baru...">
+<button onclick="tambah()">Tambah</button>
+<ul id="daftar"></ul>
+</div>
+<script>
+async function muat(){
+  const r = await fetch('/api/items'); const d = await r.json();
+  document.getElementById('daftar').innerHTML =
+    d.items.map(i => '<li>' + i.nama + '</li>').join('') || '<li>(belum ada item)</li>';
+}
+async function tambah(){
+  const el = document.getElementById('nama');
+  if(!el.value.trim()) return;
+  await fetch('/api/items', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({nama: el.value.trim()})});
+  el.value=''; muat();
+}
+muat();
+</script>
+</body>
+</html>
+'''
+
+
+def fullstack_project(nama, server_override=None, html_override=None):
+    """Tulis paket fullstack (server.py + index.html + README) ke data/generated.
+
+    Kembalikan (slug, title, written). Dipakai skill inti_fullstack.
+    """
+    title = " ".join(str(nama).split())[:60] or "Aplikasi Fullstack"
+    title = re.sub(r'[/\\:<>\"?*|]', "", title).strip() or "Aplikasi Fullstack"
+    if len(title) < 3 or title.lower() in {"nya", "game", "gamenya", "aplikasi",
+                                           "aplikasinya", "itu", "ini"}:
+        title = "Aplikasi Fullstack"
+    slug = slugify(title, "fullstack")
+    server = server_override or _FULLSTACK_SERVER.replace("__TITLE__", title)
+    html = html_override or _FULLSTACK_HTML.replace("__TITLE__", title)
+    readme = (f"# {title}\n\nPaket fullstack dari Your Agent: backend API "
+              f"Python (server.py, stdlib saja) + frontend web (index.html) "
+              f"yang memanggil API-nya.\n\n## Menjalankan\n\n```bash\n"
+              f"python3 server.py\n```\n\nLalu buka http://localhost:8000 di "
+              f"browser. API: GET/POST /api/items (JSON).\n")
+    files = {"server.py": server, "index.html": html, "README.md": readme}
+    written = _write(GEN_DIR / "fullstack" / slug, files)
+    return slug, title, written

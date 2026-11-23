@@ -62,12 +62,15 @@ def custom_activity(llm, nama, jenis, deskripsi, pkg):
             "sebuah GAME Android yang bisa dimainkan penuh dalam satu View Canvas kustom: "
             "ada skor, batas waktu atau nyawa, kondisi game over, dan mulai ulang dengan ketukan. "
             "Mekanisme & tema WAJIB mengikuti instruksi pengguna di bawah — jangan buat game "
-            "ketuk-target generik kecuali memang itu yang diminta.")
+            "ketuk-target generik kecuali memang itu yang diminta. Sertakan progres "
+            "kesulitan (kecepatan/level naik seiring skor), kontrol sentuh yang "
+            "responsif, dan tampilan rapi (skor & nyawa selalu terlihat).")
     else:
         tugas = (
             "sebuah APLIKASI Android interaktif: UI dibangun programatis di MainActivity "
             "(LinearLayout/TextView/EditText/Button), fitur & alur WAJIB mengikuti instruksi "
-            "pengguna di bawah — bukan sekadar layar halo.")
+            "pengguna di bawah — bukan sekadar layar halo. Sertakan validasi input "
+            "sederhana, keadaan kosong yang ramah, dan hasil yang langsung terasa berguna.")
     prompt = (
         f"Tulis SATU file MainActivity.kt (Kotlin Android) untuk {tugas}\n"
         f"Judul: {nama}\nInstruksi pengguna: {tema}\n\n"
@@ -121,3 +124,75 @@ def custom_web(llm, nama, jenis, deskripsi):
     if idx > 0:
         html = html[idx:]
     return html if validate_html(html) else None
+
+
+# ------------------------------------------------------------ fullstack ------
+_PY_STDLIB_OK = {"http", "json", "os", "sys", "re", "threading", "datetime",
+                 "pathlib", "urllib", "html", "time", "math", "random"}
+_PY_FORBIDDEN = ("subprocess", "eval(", "exec(", "__import__", "socket",
+                 "os.system", "os.popen", "shutil.rmtree", "requests")
+
+
+def validate_python_server(code):
+    """True bila server.py AI aman & utuh: stdlib saja, sintaks sah, pola API."""
+    if not code or not (600 <= len(code) <= 30000):
+        return False
+    if "HTTPServer" not in code or "/api/" not in code:
+        return False
+    if any(bad in code for bad in _PY_FORBIDDEN):
+        return False
+    for m in re.finditer(r"^\s*(?:import|from)\s+([a-zA-Z_][\w.]*)", code, re.M):
+        if m.group(1).split(".")[0] not in _PY_STDLIB_OK:
+            return False
+    try:
+        compile(code, "server.py", "exec")
+    except SyntaxError:
+        return False
+    return True
+
+
+def fullstack_bundle(llm, nama, deskripsi):
+    """Minta LLM menulis (server.py, index.html) satu paket fullstack.
+
+    Kembalikan (server_code, html) bila LOLOS validator, else (None, None)
+    supaya pemanggil jatuh ke template bawaan yang pasti jalan.
+    """
+    if llm is None:
+        return None, None
+    instr = (deskripsi or nama).strip()
+    try:
+        raw_server = llm([
+            {"role": "system", "content":
+             "Kamu programmer Python senior. Tulis SATU file server.py fullstack "
+             "untuk aplikasi '" + nama + "' mengikuti instruksi pengguna: " + instr + "\n"
+             "ATURAN KERAS:\n"
+             "- Hanya pustaka standar Python (http.server, json, pathlib, threading, "
+             "datetime, re, urllib, html, time, math, random, os, sys). Tanpa pip.\n"
+             "- Pakai ThreadingHTTPServer di port 8000, host 0.0.0.0.\n"
+             "- Sediakan API JSON di awalan /api/ (minimal GET /api/items dan "
+             "POST /api/items) dengan data dalam memori (list/dict Python).\n"
+             "- GET / menyajikan file index.html di folder yang sama.\n"
+             "- DILARANG: subprocess, eval, exec, socket, os.system, akses file di "
+             "luar folder sendiri.\n"
+             "- Balas HANYA isi file server.py, tanpa penjelasan, tanpa pagar kode."},
+            {"role": "user", "content": "Tulis server.py untuk: " + instr}])
+        server = _strip_fences(raw_server or "")
+        if not validate_python_server(server):
+            return None, None
+        raw_html = llm([
+            {"role": "system", "content":
+             "Kamu programmer web senior. Tulis SATU file index.html utuh untuk "
+             "aplikasi '" + nama + "' mengikuti instruksi pengguna: " + instr + "\n"
+             "ATURAN KERAS:\n"
+             "- Satu file: CSS & JS inline, TANPA <script src> atau CDN eksternal.\n"
+             "- Halaman HARUS memanggil API backend-nya dengan fetch() ke path "
+             "/api/... (relatif, tanpa host) untuk membaca & menambah data.\n"
+             "- Tampilan modern, rapi, Bahasa Indonesia, responsif untuk HP.\n"
+             "- Balas HANYA isi file index.html lengkap, tanpa penjelasan."},
+            {"role": "user", "content": "Tulis index.html untuk: " + instr}])
+        html = _strip_fences(raw_html or "")
+        if not validate_html(html) or "fetch(" not in html or "/api/" not in html:
+            return None, None
+        return server, html
+    except Exception:
+        return None, None

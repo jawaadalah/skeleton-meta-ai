@@ -33,7 +33,7 @@ APK asli** langsung dari perintah chat.
 | **Info token & kuota live** | Setiap balasan menampilkan pemakaian token; strip di layar utama + kartu di Pengaturan menampilkan **sisa kuota provider secara live**. |
 | **BYOK** | Pakai API key milikmu (Groq, OpenRouter, OpenAI, Gemini, atau server kompatibel lain) langsung dari Pengaturan. |
 | **3 tema** | Premium Navy, Terang, AMOLED — plus tampilan edge-to-edge modern. |
-| **Integrasi n8n** | Skill `kirim_ke_n8n` meneruskan perintah ke webhook n8n milikmu (URL hanya dari konfigurasi server, anti-SSRF). |
+| **Skill Inti Fullstack** | Satu perintah membangun paket fullstack utuh: backend API Python + frontend web + README cara menjalankan. |
 
 ## 16 skill agen
 
@@ -52,7 +52,7 @@ APK asli** langsung dari perintah chat.
 | `daftar_hasil_generate` | Daftar proyek yang sudah dibuat | aman |
 | `buat_apk_android` | Buat proyek **dan** bangun jadi APK (Pabrik APK) | aman |
 | `cek_apk` | Cek status unduhan APK sebuah proyek | aman |
-| `kirim_ke_n8n` | Kirim perintah ke webhook n8n (bila dikonfigurasi) | aman |
+| `inti_fullstack` | **Skill inti**: bangun paket fullstack utuh (server API + web frontend) | aman |
 
 Cara kerja agen: **router deterministik (0 token)** memetakan perintah yang
 polanya jelas langsung ke skill; sisanya direncanakan LLM (maks 3 langkah per
@@ -73,6 +73,9 @@ ada shell.
      → tunggu ±3–6 menit, tautan unduh APK muncul di balasan (atau tanya
      `cek apk perang-bintang`)
    - `buatkan halaman web Toko Kopi Senja`
+   - `buatkan fullstack Kasir Online` → paket server API + web siap jalan
+   - Perintah membuat game/aplikasi Android **langsung dibangun jadi APK**
+     (tambah "proyek saja" di akhir perintah bila hanya mau kodenya)
    - `ambil isi https://example.com`
 3. Di **⚙ Atur** kamu bisa: mengganti alamat backend & token aplikasi, memakai
    API key milikmu (preset Groq/OpenRouter/OpenAI/Gemini/Kustom), memilih tema,
@@ -99,8 +102,6 @@ Variabel `.env`:
 | `APP_TOKEN` | dianjurkan | Token rahasia; klien wajib mengirim header `X-App-Token`. Tanpa ini backend terbuka untuk siapa pun yang tahu alamatnya. |
 | `SYSTEM_PROMPT` | tidak | Kepribadian tambahan agen (selain `backend/SOUL.md`). |
 | `GITHUB_TOKEN` | untuk Pabrik APK | Fine-grained PAT khusus repo ini (Contents: Read & write) agar backend bisa mendorong proyek ke folder `factory/`. |
-| `N8N_WEBHOOK_URL` | untuk n8n | URL webhook produksi n8n milikmu. |
-| `N8N_WEBHOOK_SECRET` | tidak | Dikirim sebagai header `X-Webhook-Secret`. |
 
 Untuk hosting WSGI (PythonAnywhere dan sejenisnya) pakai `backend/wsgi_app.py`
 sebagai application. Langkah deploy PythonAnywhere yang terbukti jalan ada di
@@ -168,8 +169,8 @@ snapshot sisa kuota provider dari header rate-limit terakhir
 - Atur `APP_TOKEN` di server dan samakan di aplikasi (⚙ Atur → Koneksi Server)
   — tanpa token, siapa pun yang tahu URL backend bisa memakai kuotamu.
 - Aksi merusak selalu berhenti di gerbang konfirmasi (token sekali pakai).
-- `ambil_halaman_web` dan `kirim_ke_n8n` anti-SSRF: tujuan dibatasi skema
-  http/https; webhook n8n hanya dari konfigurasi server, bukan dari chat.
+- `ambil_halaman_web` anti-SSRF: tujuan dibatasi skema http/https dan
+  alamat privat/lokal ditolak.
 - Jangan commit `.env` — sudah tercakup `.gitignore` beserta `backend/data/`.
 
 ## Pengembangan
