@@ -11,8 +11,8 @@ android {
         applicationId = "com.jawaadalah.youragent"
         minSdk = 24
         targetSdk = 35
-        versionCode = 14
-        versionName = "12.2"
+        versionCode = 15
+        versionName = "12.3"
     }
 
     // Tanda tangan debug TETAP (sejak v12.1): keystore yang sama di setiap
@@ -31,6 +31,15 @@ android {
     buildTypes {
         debug {
             signingConfig = signingConfigs.getByName("fixedDebug")
+            // Optimasi APK (v12.3): R8 memangkas & mengoptimalkan kode,
+            // shrinkResources membuang resource tak terpakai — APK jauh
+            // lebih kecil & lebih cepat, fungsi tetap sama.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
         release {
             isMinifyEnabled = false
