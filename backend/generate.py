@@ -338,6 +338,7 @@ def _android_files(title, pkg, activity):
     ctx = {"title": title, "pkg": pkg}
     return {
         "settings.gradle.kts": _SETTINGS % ctx,
+        "gradle.properties": "android.useAndroidX=true\nandroid.nonTransitiveRClass=true\norg.gradle.jvmargs=-Xmx2048m\n",
         "build.gradle.kts": _ROOT_BUILD,
         "app/build.gradle.kts": _APP_BUILD % ctx,
         "app/src/main/AndroidManifest.xml": _MANIFEST % ctx,
