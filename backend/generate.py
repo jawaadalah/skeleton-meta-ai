@@ -397,6 +397,10 @@ def android_project(nama, jenis="aplikasi", paket="", activity_override=None):
     title = " ".join(str(nama).split())[:60] or default_title
     # Gradle melarang / \ : < > " ? * | pada rootProject.name — bersihkan dari judul.
     title = re.sub(r'[/\\:<>"?*|]', "", title).strip() or default_title
+    # Nama sampah (mis. "nya" dari "Buat gamenya") tidak boleh jadi judul proyek.
+    if len(title) < 3 or title.lower() in {"nya", "game", "gamenya", "aplikasi",
+                                           "aplikasinya", "itu", "ini"}:
+        title = default_title
     slug = slugify(title, "game" if jenis == "game" else "aplikasi")
     pkg = paket.strip() or f"com.jawaadalah.{slug.replace('-', '')}"
     fallback_pkg = "com.jawaadalah.game" if jenis == "game" else "com.jawaadalah.app"

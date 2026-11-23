@@ -32,6 +32,24 @@ MAX_STEPS = 3
 _pending = {}  # confirm_token -> {"session_id", "skill", "args"}
 
 
+_JUNK_NAMES = {"nya", "game", "gamenya", "aplikasi", "aplikasinya", "itu", "ini",
+               "dong", "aja", "saja", "yang", "saya", "ku", "punyaku", "punya saya"}
+
+
+def _clean_name(raw, default):
+    """Bersihkan nama proyek dari teks pengguna; tolak nama sampah.
+
+    Regresi v12: perintah lanjutan "Buat gamenya" menghasilkan proyek bernama
+    "nya" (sisa kata sesudah "game"). Nama < 3 huruf atau kata sisa seperti itu
+    diganti nama bawaan yang masuk akal.
+    """
+    nama = " ".join(str(raw or "").split()).strip(" :,'\"")
+    nama = nama.split(":")[0].strip(" ,")
+    if len(nama) < 3 or nama.lower() in _JUNK_NAMES:
+        return default
+    return nama
+
+
 # ---------------------------------------------------------- router (0 token) --
 def deterministic_route(message):
     """Petakan pesan yang polanya jelas ke (skill, args). None bila tidak yakin."""
@@ -67,23 +85,23 @@ def deterministic_route(message):
             nama = re.sub(r"\b(jadi|menjadi|bentuk|file|apk|android|simpel|sederhana)\b", "",
                           gm.group(1), flags=re.I).strip(" :") or "Game Ketuk Target"
             # Nama proyek berhenti di ':' pertama — sisanya deskripsi.
-            nama = nama.split(":")[0].strip(" ,") or "Game Ketuk Target"
+            nama = _clean_name(nama, "Game Ketuk Target")
             return "buat_apk_android", {"nama": nama, "jenis": "game", "deskripsi": text}
         if am:
             nama = re.sub(r"\b(jadi|menjadi|bentuk|file|apk|android|simpel|sederhana)\b", "",
                           am.group(1), flags=re.I).strip(" :") or "AplikasiKu"
-            nama = nama.split(":")[0].strip(" ,") or "AplikasiKu"
+            nama = _clean_name(nama, "AplikasiKu")
             return "buat_apk_android", {"nama": nama, "jenis": "aplikasi", "deskripsi": text}
 
     # v7 — generator proyek (Android / game / web) — nama diambil dari teks asli
     # (bukan lowercase) supaya kapitalisasi judul proyek tetap benar.
     m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?game\s+android\s*(.*)", text, flags=re.I)
     if m:
-        return "buat_game_android", {"nama": m.group(1).strip(" :") or "Game Ketuk Target", "deskripsi": text}
+        return "buat_game_android", {"nama": _clean_name(m.group(1), "Game Ketuk Target"), "deskripsi": text}
 
     m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?(?:aplikasi|app)\s+android\s*(.*)", text, flags=re.I)
     if m:
-        return "buat_aplikasi_android", {"nama": m.group(1).strip(" :") or "AplikasiKu", "deskripsi": text}
+        return "buat_aplikasi_android", {"nama": _clean_name(m.group(1), "AplikasiKu"), "deskripsi": text}
 
     m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?(?:halaman\s+web|website|situs\s+web|web)\s*(.*)", text, flags=re.I)
     if m:
@@ -91,7 +109,7 @@ def deterministic_route(message):
         rest_low = rest.lower()
         jenis = "game" if "game" in rest_low else ("kalkulator" if "kalkulator" in rest_low else "landing")
         nama = re.sub(r"^(game|kalkulator)\s+", "", rest, flags=re.I).strip() or "Halamanku"
-        nama = nama.split(":")[0].strip(" ,") or "Halamanku"
+        nama = _clean_name(nama, "Halamanku")
         return "buat_halaman_web", {"nama": nama, "jenis": jenis, "deskripsi": text}
 
     if any(w in low for w in ("daftar proyek", "proyek yang sudah dibuat",
@@ -103,11 +121,11 @@ def deterministic_route(message):
     m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?(?:aplikasi\s+)?game\s*(.*)", text, flags=re.I)
     if m:
         nama = re.sub(r"\b(simpel|sederhana|simple)\b", "", m.group(1), flags=re.I).strip(" :")
-        return "buat_game_android", {"nama": nama or "Game Ketuk Target", "deskripsi": text}
+        return "buat_game_android", {"nama": _clean_name(nama, "Game Ketuk Target"), "deskripsi": text}
 
     m = re.search(r"buat(?:kan)?\s+(?:saya\s+)?aplikasi\s+(.+)", text, flags=re.I)
     if m:
-        return "buat_aplikasi_android", {"nama": m.group(1).strip(" :"), "deskripsi": text}
+        return "buat_aplikasi_android", {"nama": _clean_name(m.group(1), "AplikasiKu"), "deskripsi": text}
 
     # v11 — integrasi n8n: "n8n: <teks>", "otomasi: <teks>", "kirim ke n8n <teks>"
     m = re.match(r"(?:n8n|otomasi)\s*:\s*(.+)", text, flags=re.I | re.S)

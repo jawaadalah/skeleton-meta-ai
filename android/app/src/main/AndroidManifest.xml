@@ -10,8 +10,8 @@
         android:label="Your Agent"
         android:theme="@style/Theme.YourAgent"
         android:usesCleartextTraffic="true">
-        <!-- usesCleartextTraffic=true hanya untuk backend lokal (http) saat pengembangan.
-             Hapus / ganti dengan network security config saat backend sudah https. -->
+        <!-- usesCleartextTraffic=true supaya backend self-host lokal (http) tetap
+             bisa dipakai lewat Pengaturan; backend bawaan memakai https. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

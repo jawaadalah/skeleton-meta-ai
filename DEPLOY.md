@@ -1,57 +1,74 @@
-# Deploy Backend Supaya Bisa Diakses dari Mana Saja
+# Deploy Backend Your Agent
 
-Tujuan: backend tidak lagi hanya di komputer rumah (`10.0.2.2` / IP LAN),
-tapi punya alamat publik `https://...` yang bisa dijangkau aplikasi Android dari mana pun.
-
-Backend ini sudah siap deploy: membaca `PORT` dari platform, ada `Dockerfile`,
-`render.yaml`, dan `Procfile`. Tinggal pilih **satu** jalur di bawah.
+Tujuan: backend punya alamat publik `https://...` yang bisa dijangkau aplikasi
+Android dari mana saja. Backend ini murni Python stdlib — tidak ada build step,
+tidak ada `pip install`.
 
 ## Sebelum deploy — wajib
 
-1. **Isi `APP_TOKEN`** di pengaturan environment platform (jangan di file repo).
-   Backend publik tanpa token = siapa pun bisa memakai API key-mu.
-   Di Render, `render.yaml` proyek ini membuatkannya otomatis (`generateValue`).
-2. **Isi `META_API_KEY`** sebagai environment variable di platform — bukan di Git.
-3. Setelah live, di aplikasi Android: tombol **URL** → isi alamat `https://...`
-   hasil deploy + token yang sama dengan `APP_TOKEN` di server.
+1. **Isi `APP_TOKEN`** sebagai environment variable / di `.env` server (jangan
+   di file repo). Backend publik tanpa token = siapa pun bisa memakai kuota
+   API key-mu. Samakan tokennya di aplikasi: **⚙ Atur → Koneksi Server**.
+2. **Isi `META_API_KEY`, `META_API_BASE_URL`, `META_MODEL`** di server —
+   bukan di Git (`.env` sudah ditahan `.gitignore`).
+3. Setelah live, tes dari luar: buka `https://alamatmu/health` — harus
+   menjawab `{"status": "ok", ...}`.
 
-## Jalur A — Render (disarankan, gratis, daftar pakai GitHub)
+## Jalur A — PythonAnywhere (terbukti jalan, gratis, tanpa kartu)
 
-1. Push folder proyek ini ke repo GitHub (mis. `jawaadalah/your-agent`).
-   Pastikan `.env` **tidak** ikut — sudah ditahan `.gitignore`.
-2. Buka https://render.com → **Get Started** → daftar/login pakai GitHub.
-3. **New → Blueprint** → pilih repo tadi → Render membaca `render.yaml` proyek ini.
-4. Isi `META_API_KEY` saat diminta. `APP_TOKEN` dibuatkan otomatis — buka
-   service-nya → **Environment** untuk melihat/menyalin nilainya.
-5. Tunggu build selesai → alamatmu jadi `https://skeleton-meta-ai.onrender.com`
-   (nama bisa beda). Tes: buka `https://alamatmu/health` di browser —
-   harus menjawab `{"status": "ok", ...}`.
-6. Di Android: tombol **URL** → tempel alamat itu + token dari langkah 4 → Simpan.
+Ini jalur yang dipakai backend resmi Your Agent
+(https://jawaadalah.pythonanywhere.com).
 
-Catatan jalur gratis Render: service **tidur setelah ±15 menit tidak dipakai**;
-permintaan pertama setelah tidur butuh ±30–60 detik untuk bangun. Normal untuk
-kelas gratis — aplikasi tetap jalan, hanya balasan pertama lebih lambat.
+1. Daftar di https://www.pythonanywhere.com (cukup email, tanpa kartu).
+2. Buka **Bash console** → clone repo:
+   `git clone https://github.com/jawaadalah/your-agent.git`
+3. Buat file `backend/.env` di hasil clone dan isi variabelnya (lihat README).
+4. Tab **Web** → **Add a new web app** → pilih **Manual configuration** →
+   Python versi terbaru.
+5. Atur **WSGI configuration file** agar mengarah ke `backend/wsgi_app.py`
+   repo ini (sesuaikan `project_home` dengan folder clone-mu), contoh pola:
 
-## Jalur B — Hugging Face Spaces (alternatif gratis, daftar pakai email)
+   ```python
+   import os, sys
+   project_home = os.path.expanduser('~/your-agent/backend')
+   if project_home not in sys.path:
+       sys.path.insert(0, project_home)
+   os.chdir(project_home)
+   from wsgi_app import application
+   ```
 
-1. Daftar di https://huggingface.co (cukup email).
-2. **New Space** → SDK: **Docker** → unggah isi proyek ini (atau hubungkan repo).
-3. Di Space → **Settings → Variables and secrets**: tambah `META_API_KEY` dan
-   `APP_TOKEN` (sebagai *secret*).
-4. Space jalan dengan alamat `https://<username>-<nama-space>.hf.space` —
-   tes `/health`, lalu atur URL + token di aplikasi Android seperti di atas.
+6. Klik **Reload** di tab Web → tes `https://<username>.pythonanywhere.com/health`.
 
-## Yang sengaja TIDAK dipakai
+Catatan jujur jalur gratis PythonAnywhere:
+- Situs gratis **dinonaktifkan setelah ±1 bulan** bila tidak diperpanjang —
+  perpanjang gratis dari tab Web ("Run until 1 month from today").
+- Hanya host dalam whitelist proxy gratisnya yang bisa dijangkau backend;
+  `api.groq.com` termasuk, jadi Groq cocok untuk jalur ini.
+- Update versi: di Bash console `git pull` di folder clone → **Reload**.
 
-- **Fly.io / Railway**: saat ini umumnya meminta kartu untuk mulai — bertentangan
-  dengan aturan proyek ini (tanpa uang/kartu di awal). `Dockerfile` + `Procfile`
-  di proyek ini tetap kompatibel bila suatu hari kamu memilihnya sendiri.
+## Jalur B — Server/VPS sendiri atau komputer rumah
+
+```bash
+git clone https://github.com/jawaadalah/your-agent.git
+cd your-agent && cp .env.example .env   # isi nilainya
+python3 backend/main.py                  # dengarkan PORT dari env (bawaan 8000)
+```
+
+Taruh di belakang reverse proxy HTTPS (Caddy/Nginx) bila diekspos ke internet,
+atau jalankan `wsgi_app.py` dengan server WSGI apa pun (gunicorn/waitress —
+di luar stdlib, pilihanmu).
+
+## Jalur yang TIDAK lagi disarankan (pengalaman nyata proyek ini)
+
+- **Render (akun baru):** kini meminta verifikasi kartu kredit sebelum deploy
+  pertama — tidak lagi "gratis tanpa kartu".
+- **Hugging Face Spaces (Docker):** kini mensyaratkan langganan PRO berbayar
+  untuk Space Docker.
+
+File `Dockerfile`, `render.yaml`, dan `Procfile` tetap ada di repo bila kamu
+punya akun lama/berbayar di platform tersebut.
 
 ## Setelah deploy
 
-- Alamat publik memakai **HTTPS**, jadi batasan `usesCleartextTraffic` di Android
-  tidak lagi jadi masalah untuk alamat ini.
-- Ingatan sesi masih di memori server: restart/redeploy platform akan
-  mengosongkannya. Itu wajar untuk skeleton; penyimpanan permanen adalah langkah v5+.
-- Cek berkala: `GET /health` menunjukkan `mode` (`live`/`mock`) dan `auth: true`.
-  Kalau `mode` masih `mock`, berarti `META_API_KEY` belum terbaca di platform.
+Di aplikasi Android: **⚙ Atur → Koneksi Server** → isi alamat `https://...`
+hasil deploy + token yang sama dengan `APP_TOKEN` server → Simpan.

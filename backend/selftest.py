@@ -154,11 +154,11 @@ def test_v7():
     agent = lambda obj: call("POST", "/agent", obj)
 
     health = call("GET", "/health")
-    assert health["version"] == "11.3" and health["soul"] is True, health
+    assert health["version"] == "1.0.0" and health["soul"] is True, health
     assert health["skills"] == 16, health
     soul = call("GET", "/soul")["soul"]
     assert "Skele" in soul, soul[:100]
-    print("OK  v7 /health: versi 11.3, SOUL.md termuat, 16 skill terdaftar; /soul terbaca")
+    print("OK  v7 /health: versi 1.0.0, SOUL.md termuat, 16 skill terdaftar; /soul terbaca")
 
     r = agent({"message": "ingat bahwa warna favorit saya biru langit", "session_id": "v7-tes"})
     assert r["steps"][0]["skill"] == "ingat", r
@@ -353,7 +353,7 @@ def test_v11():
             h2 = json.loads(r.read().decode("utf-8"))
         assert h2.get("quota", {}).get("remaining_requests") == 999, h2
         assert h2.get("quota", {}).get("remaining_tokens") == 199000, h2
-        print("OK  v11.3 kuota: header rate-limit tertangkap, /health menampilkan sisa kuota")
+        print("OK  kuota: header rate-limit tertangkap, /health menampilkan sisa kuota")
         print("OK  v11.2 info token: usage dari API diteruskan ke respons (total 18)")
         print("OK  v11 override LLM: base_url+model+api_key dari aplikasi dipakai (stub membuktikan), env server tidak dipakai")
         # Jalur WSGI (yang dipakai PythonAnywhere) juga wajib meneruskan override —
@@ -381,6 +381,16 @@ def test_v11():
             print("OK  v11 WSGI: override LLM diteruskan wsgi_app (jalur produksi PA)")
         finally:
             _bm.MOCK = old_mock
+        # v1.0.0 — regresi nama proyek sampah: "Buat gamenya" tidak boleh lagi
+        # menghasilkan proyek bernama "nya"; nama sah harus tetap lolos utuh.
+        import agent as _agent
+        r = _agent.deterministic_route("Buat gamenya")
+        assert r and r[0] == "buat_game_android" and r[1]["nama"] == "Game Ketuk Target", r
+        r = _agent.deterministic_route("buatkan game android Perang Bintang: pesawat menembak asteroid")
+        assert r and r[1]["nama"] == "Perang Bintang", r
+        r = _agent.deterministic_route("buatkan aplikasi android Kasir Warung")
+        assert r and r[1]["nama"] == "Kasir Warung", r
+        print("OK  v1.0.0 router: nama proyek sampah ditolak, nama sah tetap lolos")
 
     finally:
         proc.terminate()
