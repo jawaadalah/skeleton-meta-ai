@@ -101,6 +101,11 @@ def _handle_agent(environ, start_response):
         result = bm.agent_mod.run_agent(user_text, effective_session,
                                         bm._system_messages() + list(history),
                                         llm_call, bm.mock_reply)
+    except urllib.error.HTTPError as e:
+        if e.code == 429:
+            return _json(start_response, 200, {"reply": bm.agent_mod.BUSY_REPLY, "steps": [],
+                                               "mode": "live", "version": bm.VERSION})
+        return _json(start_response, 502, {"error": "agen gagal berjalan", "detail": str(e)[:300]})
     except Exception as e:
         return _json(start_response, 502, {"error": "agen gagal berjalan", "detail": str(e)[:300]})
     result.setdefault("steps", [])
@@ -164,6 +169,9 @@ def _handle_chat(environ, start_response, streaming):
         try:
             reply = bm.ask_meta(messages, data.get("llm"))
         except urllib.error.HTTPError as e:
+            if e.code == 429:
+                return _json(start_response, 200, {"reply": bm.agent_mod.BUSY_REPLY,
+                                                   "mode": "live", "version": bm.VERSION})
             detail = e.read().decode("utf-8", "replace")[:300]
             return _json(start_response, 502, {"error": f"Meta API menjawab {e.code}", "detail": detail})
         except Exception as e:

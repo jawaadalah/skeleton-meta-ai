@@ -49,7 +49,7 @@ import memory_store as memory_mod
 import skills as skills_mod
 import store as store_mod
 
-VERSION = "11.0"
+VERSION = "11.1"
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -129,18 +129,33 @@ def _llm_cfg(override=None):
 
 
 # UA browser wajib: Cloudflare di depan Groq menolak UA bawaan Python-urllib (403).
+def _retryable(e):
+    """429 (kuota/rate limit) & 5xx layak dicoba ulang dengan jeda."""
+    return isinstance(e, urllib.error.HTTPError) and e.code in (429, 500, 502, 503)
+
+
 def ask_meta(messages, override=None):
     cfg = _llm_cfg(override)
     payload = json.dumps({"model": cfg["model"], "messages": messages}).encode("utf-8")
-    req = urllib.request.Request(
-        f"{cfg['base_url']}/chat/completions",
-        data=payload,
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {cfg['api_key']}", "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
-    return data["choices"][0]["message"]["content"]
+    last_err = None
+    for attempt, wait in enumerate((0, 2, 5)):
+        if wait:
+            time.sleep(wait)
+        req = urllib.request.Request(
+            f"{cfg['base_url']}/chat/completions",
+            data=payload,
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {cfg['api_key']}", "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            return data["choices"][0]["message"]["content"]
+        except Exception as e:  # noqa: BLE001 - retry hanya untuk 429/5xx
+            last_err = e
+            if not _retryable(e):
+                raise
+    raise last_err
 
 
 def stream_meta(messages, override=None):
@@ -153,7 +168,21 @@ def stream_meta(messages, override=None):
         headers={"Content-Type": "application/json", "Authorization": f"Bearer {cfg['api_key']}", "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"},
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=120) as resp:
+    resp = None
+    last_err = None
+    for attempt, wait in enumerate((0, 2, 5)):
+        if wait:
+            time.sleep(wait)
+        try:
+            resp = urllib.request.urlopen(req, timeout=120)
+            break
+        except Exception as e:  # noqa: BLE001
+            last_err = e
+            if not _retryable(e):
+                raise
+    if resp is None:
+        raise last_err
+    with resp:
         for raw in resp:
             line = raw.decode("utf-8", "replace").strip()
             if not line.startswith("data:"):
@@ -290,6 +319,10 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 reply = ask_meta(messages, data.get("llm"))
             except urllib.error.HTTPError as e:
+                if e.code == 429:
+                    self._json(200, {"reply": agent_mod.BUSY_REPLY, "mode": "live",
+                                     "version": VERSION})
+                    return
                 detail = e.read().decode("utf-8", "replace")[:300]
                 self._json(502, {"error": f"Meta API menjawab {e.code}", "detail": detail})
                 return
@@ -335,6 +368,13 @@ class Handler(BaseHTTPRequestHandler):
         try:
             result = agent_mod.run_agent(user_text, effective_session, agent_history,
                                          llm_call, mock_reply)
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                self._json(200, {"reply": agent_mod.BUSY_REPLY, "steps": [],
+                                 "mode": "live", "version": VERSION})
+                return
+            self._json(502, {"error": "agen gagal berjalan", "detail": str(e)[:300]})
+            return
         except Exception as e:
             self._json(502, {"error": "agen gagal berjalan", "detail": str(e)[:300]})
             return

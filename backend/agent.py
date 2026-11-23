@@ -22,6 +22,7 @@ Rem pengaman harness (tidak bisa ditawar LLM):
   - Setiap langkah dicatat di "steps" dan dikembalikan ke klien (jejak audit).
 """
 import json
+import urllib.error
 import re
 import secrets
 
@@ -207,6 +208,15 @@ def run_agent(message, session_id, history, llm_call, mock_reply_fn):
         ), "steps": steps}
 
     # Mode live: LLM memilih skill atau jawab langsung, maks MAX_STEPS putaran.
+    try:
+        return _run_live(message, session_id, history, llm_call, ctx, steps)
+    except urllib.error.HTTPError as e:
+        if e.code == 429:
+            return {"reply": BUSY_REPLY, "steps": steps}
+        raise
+
+
+def _run_live(message, session_id, history, llm_call, ctx, steps):
     convo = list(history[-10:])
     convo.append({"role": "user", "content": message})
     for _ in range(MAX_STEPS):
@@ -228,6 +238,14 @@ def run_agent(message, session_id, history, llm_call, mock_reply_fn):
     return {"reply": reply, "steps": steps}
 
 
+BUSY_REPLY = (
+    "⏳ Otak AI sedang kena batas kuota gratis (terlalu banyak permintaan "
+    "dalam waktu singkat). Tunggu sekitar 30 detik, lalu kirim lagi pesanmu. "
+    "Mau bebas batas? Pakai API key milikmu di ⚙ Atur → Otak AI — daftar "
+    "Groq/OpenRouter itu gratis."
+)
+
+
 _VERBATIM_SKILLS = {"buat_apk_android", "buat_aplikasi_android", "buat_game_android",
                     "buat_halaman_web", "cek_apk", "kirim_ke_n8n"}
 
@@ -244,7 +262,12 @@ def _compose(message, steps, history, llm_call, mock_reply_fn):
     convo = list(history[-10:])
     convo.append({"role": "user", "content": message})
     convo.append({"role": "user", "content": f"Hasil skill {last['skill']}: {last['result']}\nJawab pengguna berdasarkan hasil ini, singkat dan jelas."})
-    return llm_call(convo)
+    try:
+        return llm_call(convo)
+    except urllib.error.HTTPError as e:
+        if e.code == 429:
+            return f"{last['result']}\n\n(Balasan ringkas otomatis: otak AI sedang kena batas kuota, hasil skill ditampilkan apa adanya.)"
+        raise
 
 
 def _ask_plan(llm_call, convo, steps):

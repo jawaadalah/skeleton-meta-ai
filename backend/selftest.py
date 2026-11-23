@@ -154,11 +154,11 @@ def test_v7():
     agent = lambda obj: call("POST", "/agent", obj)
 
     health = call("GET", "/health")
-    assert health["version"] == "11.0" and health["soul"] is True, health
+    assert health["version"] == "11.1" and health["soul"] is True, health
     assert health["skills"] == 16, health
     soul = call("GET", "/soul")["soul"]
     assert "Skele" in soul, soul[:100]
-    print("OK  v7 /health: versi 11.0, SOUL.md termuat, 16 skill terdaftar; /soul terbaca")
+    print("OK  v7 /health: versi 11.1, SOUL.md termuat, 16 skill terdaftar; /soul terbaca")
 
     r = agent({"message": "ingat bahwa warna favorit saya biru langit", "session_id": "v7-tes"})
     assert r["steps"][0]["skill"] == "ingat", r
@@ -278,8 +278,20 @@ def test_v11():
     seen = {}
 
     class Stub(BaseHTTPRequestHandler):
+        hits = 0
+
         def do_POST(self):
+            Stub.hits += 1
             body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))))
+            if Stub.hits == 1:
+                # Pukulan pertama: 429 — backend wajib mencoba ulang (retry).
+                raw = json.dumps({"error": {"message": "rate limited"}}).encode()
+                self.send_response(429)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(raw)))
+                self.end_headers()
+                self.wfile.write(raw)
+                return
             seen["auth"] = self.headers.get("Authorization", "")
             seen["model"] = body.get("model", "")
             out = {"choices": [{"message": {"content": "JAWABAN-STUB-11"}}]}
@@ -326,6 +338,7 @@ def test_v11():
         with urllib.request.urlopen(req, timeout=10) as r:
             resp = json.loads(r.read().decode("utf-8"))
         assert "JAWABAN-STUB-11" in resp.get("reply", ""), resp
+        assert Stub.hits >= 2, "retry 429 tidak terjadi"
         assert seen.get("auth") == "Bearer kunci-aplikasi", seen
         assert seen.get("model") == "stub-model", seen
         print("OK  v11 override LLM: base_url+model+api_key dari aplikasi dipakai (stub membuktikan), env server tidak dipakai")
