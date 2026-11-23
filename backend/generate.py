@@ -395,6 +395,8 @@ def android_project(nama, jenis="aplikasi", paket="", activity_override=None):
     Dipakai generator lokal dan pabrik APK (v8)."""
     default_title = "GameKu" if jenis == "game" else "AplikasiKu"
     title = " ".join(str(nama).split())[:60] or default_title
+    # Gradle melarang / \ : < > " ? * | pada rootProject.name — bersihkan dari judul.
+    title = re.sub(r'[/\\:<>"?*|]', "", title).strip() or default_title
     slug = slugify(title, "game" if jenis == "game" else "aplikasi")
     pkg = paket.strip() or f"com.jawaadalah.{slug.replace('-', '')}"
     fallback_pkg = "com.jawaadalah.game" if jenis == "game" else "com.jawaadalah.app"
