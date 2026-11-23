@@ -1,0 +1,18 @@
+# Blueprint Render — deploy gratis: render.com -> New -> Blueprint -> pilih repo ini.
+# Atau manual: New -> Web Service -> Docker, root directory = repo ini.
+services:
+  - type: web
+    name: skeleton-meta-ai
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: META_API_KEY
+        sync: false        # isi manual di dashboard Render (nilai key Meta/Llama kamu)
+      - key: META_MODEL
+        value: Llama-4-Maverick-17B-128E-Instruct-FP8
+      - key: APP_TOKEN
+        generateValue: true  # Render membuat token acak; salin nilainya ke aplikasi Android
+      - key: SYSTEM_PROMPT
+        value: Kamu adalah asisten berbahasa Indonesia yang membantu dengan singkat, jelas, dan ramah.

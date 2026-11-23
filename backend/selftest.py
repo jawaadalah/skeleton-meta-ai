@@ -1,0 +1,269 @@
+#!/usr/bin/env python3
+"""Selftest end-to-end v6: health, /chat, streaming, sesi, validasi, token, AGEN + skill, persistensi."""
+import json
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+BASE = "http://127.0.0.1:8000"
+
+
+def call(method, path, obj=None):
+    data = json.dumps(obj).encode("utf-8") if obj is not None else None
+    req = urllib.request.Request(BASE + path, data=data, method=method,
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=10) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def stream(path, obj):
+    """POST lalu baca event SSE satu per satu. Kembalikan (list_chunk, event_terakhir)."""
+    req = urllib.request.Request(BASE + path, data=json.dumps(obj).encode("utf-8"),
+                                 headers={"Content-Type": "application/json"}, method="POST")
+    chunks, last = [], {}
+    with urllib.request.urlopen(req, timeout=15) as r:
+        for raw in r:
+            line = raw.decode("utf-8").strip()
+            if line.startswith("data:"):
+                event = json.loads(line[5:].strip())
+                if "chunk" in event:
+                    chunks.append(event["chunk"])
+                last = event
+    return chunks, last
+
+
+def test_agent():
+    agent = lambda obj: call("POST", "/agent", obj)
+
+    skills = call("GET", "/skills")["skills"]
+    by_name = {s["name"]: s for s in skills}
+    assert by_name["kalkulator"]["risk"] == "aman"
+    assert by_name["hapus_catatan"]["risk"] == "konfirmasi"
+    print(f"OK  /skills -> {len(skills)} skill terdaftar (tangan & kaki)")
+
+    r = agent({"message": "hitung 12*8+4", "session_id": "agen-tes"})
+    assert "100" in r["reply"] and r["steps"][0]["skill"] == "kalkulator", r
+    print("OK  agen router: 'hitung 12*8+4' -> skill kalkulator, hasil 100 (0 token LLM)")
+
+    r = agent({"message": "jam berapa sekarang?", "session_id": "agen-tes"})
+    assert r["steps"][0]["skill"] == "waktu_sekarang", r
+    print("OK  agen router: pertanyaan jam -> skill waktu_sekarang")
+
+    agent({"message": "catat: beli kopi untuk warung", "session_id": "agen-tes"})
+    r = agent({"message": "baca catatan saya", "session_id": "agen-tes"})
+    assert "beli kopi" in r["reply"], r
+    print("OK  agen tangan: simpan_catatan + baca_catatan nyambung per sesi")
+
+    r = agent({"message": "ambil isi https://127.0.0.1:8000/health", "session_id": "agen-tes"})
+    assert r["steps"][0]["skill"] == "ambil_halaman_web" and "ditolak" in r["steps"][0]["result"], r
+    print("OK  agen kaki: URL lokal/privat ditolak gerbang anti-SSRF")
+
+    r = agent({"message": "hapus catatan saya", "session_id": "agen-tes"})
+    assert r.get("needs_confirmation") and r.get("confirm_token"), r
+    token = r["confirm_token"]
+    masih = agent({"message": "baca catatan saya", "session_id": "agen-tes"})
+    assert "beli kopi" in masih["reply"], "catatan tidak boleh terhapus sebelum konfirmasi!"
+    print("OK  harness semi: hapus_catatan BERHENTI di gerbang konfirmasi, belum terhapus")
+
+    r = agent({"session_id": "agen-tes", "confirm_token": token})
+    assert "dihapus" in r["reply"], r
+    kosong = agent({"message": "baca catatan saya", "session_id": "agen-tes"})
+    assert "Belum ada catatan" in kosong["reply"], kosong
+    try:
+        agent({"session_id": "agen-tes", "confirm_token": token})
+        raise AssertionError("token konfirmasi bekas seharusnya ditolak")
+    except urllib.error.HTTPError as e:
+        assert e.code == 400
+    print("OK  konfirmasi manusia menjalankan aksi 1x; token bekas ditolak")
+
+
+def test_persistence():
+    """v6: sesi harus selamat dari restart server (server kedua di port 8002)."""
+    import os
+    env = dict(os.environ, PORT="8002", MOCK_MODE="1")
+    base = "http://127.0.0.1:8002"
+
+    def start():
+        proc = subprocess.Popen([sys.executable, str(HERE / "main.py")],
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                text=True, env=env)
+        for _ in range(50):
+            try:
+                req = urllib.request.Request(base + "/health")
+                with urllib.request.urlopen(req, timeout=5) as r:
+                    json.loads(r.read().decode("utf-8"))
+                return proc
+            except Exception:
+                time.sleep(0.2)
+        proc.terminate()
+        raise AssertionError("server persistensi tidak menyala")
+
+    def stop(proc):
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except Exception:
+            proc.kill()
+
+    def post(obj):
+        req = urllib.request.Request(base + "/chat", method="POST",
+                                     headers={"Content-Type": "application/json"},
+                                     data=json.dumps(obj).encode("utf-8"))
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return json.loads(r.read().decode("utf-8"))
+
+    def reset():
+        req = urllib.request.Request(base + "/reset", method="POST",
+                                     headers={"Content-Type": "application/json"},
+                                     data=json.dumps({"session_id": "persist-test"}).encode("utf-8"))
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return json.loads(r.read().decode("utf-8"))
+
+    proc = start()
+    try:
+        reset()  # bersih dari run selftest sebelumnya, bila ada
+        r = post({"message": "Pesan abadi pertama.", "session_id": "persist-test"})
+        assert "mengingat 0 pesan" in r["reply"], r
+    finally:
+        stop(proc)
+
+    proc = start()  # restart: sesi harus masih ada di disk
+    try:
+        r = post({"message": "Pesan abadi kedua.", "session_id": "persist-test"})
+        assert "mengingat 2 pesan" in r["reply"], r
+        reset()
+    finally:
+        stop(proc)
+
+    proc = start()  # restart lagi: reset juga harus permanen
+    try:
+        r = post({"message": "Setelah reset dan restart.", "session_id": "persist-test"})
+        assert "mengingat 0 pesan" in r["reply"], r
+        reset()
+    finally:
+        stop(proc)
+    print("OK  persistensi v6: sesi selamat dari restart server; /reset juga permanen")
+
+
+def test_token_auth():
+    """Nyalakan server kedua di port 8001 dengan APP_TOKEN, cek gerbang 401-nya."""
+    import os
+    env = dict(os.environ, PORT="8001", APP_TOKEN="rahasia-tes", MOCK_MODE="1")
+    proc = subprocess.Popen([sys.executable, str(HERE / "main.py")],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                            text=True, env=env)
+    base = "http://127.0.0.1:8001"
+    try:
+        for _ in range(50):
+            try:
+                req = urllib.request.Request(base + "/health")
+                with urllib.request.urlopen(req, timeout=5) as r:
+                    health = json.loads(r.read().decode("utf-8"))
+                break
+            except Exception:
+                time.sleep(0.2)
+        else:
+            raise AssertionError("server bertoken tidak menyala")
+        assert health["auth"] is True, health
+
+        def post(token=None):
+            headers = {"Content-Type": "application/json"}
+            if token is not None:
+                headers["X-App-Token"] = token
+            req = urllib.request.Request(base + "/chat", method="POST", headers=headers,
+                                         data=json.dumps({"message": "halo"}).encode("utf-8"))
+            with urllib.request.urlopen(req, timeout=5) as r:
+                return json.loads(r.read().decode("utf-8"))
+
+        for bad in (None, "salah"):
+            try:
+                post(bad)
+                raise AssertionError(f"token {bad!r} seharusnya ditolak")
+            except urllib.error.HTTPError as e:
+                assert e.code == 401, e.code
+        ok = post("rahasia-tes")
+        assert ok.get("reply"), ok
+        print("OK  APP_TOKEN: tanpa/salah token ditolak (401), token benar lolos, /health tetap terbuka")
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except Exception:
+            proc.kill()
+
+
+def main():
+    proc = subprocess.Popen([sys.executable, str(HERE / "main.py")],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    try:
+        health = None
+        for _ in range(50):
+            try:
+                health = call("GET", "/health")
+                break
+            except Exception:
+                time.sleep(0.2)
+        assert health and health["status"] == "ok", health
+        print(f"OK  /health -> {health}")
+
+        res = call("POST", "/chat", {"message": "Halo, ini tes end-to-end."})
+        assert res.get("reply"), res
+        print(f"OK  /chat tanpa sesi -> mode={res.get('mode')}")
+
+        s = {"session_id": "selftest"}
+        r1 = call("POST", "/chat", {**s, "message": "Pesan pertama saya."})
+        r2 = call("POST", "/chat", {**s, "message": "Pesan kedua saya."})
+        assert r1.get("reply") and r2.get("reply"), (r1, r2)
+        if r2.get("mode") == "mock":
+            # Balasan mock menyebut jumlah pesan yang diingat: sesi harus bertambah.
+            assert "mengingat 2 pesan" in r2["reply"], r2["reply"]
+        print("OK  sesi diingat server (pesan ke-2 melihat riwayat pesan ke-1)")
+
+        chunks, last = stream("/chat/stream", {"session_id": "stream-test",
+                                               "message": "Tes streaming ya."})
+        assert len(chunks) >= 3, chunks
+        assert last.get("done") is True, last
+        assembled = "".join(chunks)
+        assert "Tes streaming ya." in assembled, assembled
+        print(f"OK  /chat/stream -> {len(chunks)} potongan diterima, rakitan utuh, event done ada")
+
+        after = call("POST", "/chat", {"session_id": "stream-test", "message": "Masih ingat?"})
+        if after.get("mode") == "mock":
+            assert "mengingat 2 pesan" in after["reply"], after["reply"]
+        print("OK  hasil streaming ikut disimpan ke ingatan sesi")
+
+        call("POST", "/reset", s)
+        r3 = call("POST", "/chat", {**s, "message": "Setelah reset."})
+        if r3.get("mode") == "mock":
+            assert "mengingat 0 pesan" in r3["reply"], r3["reply"]
+        print("OK  /reset mengosongkan ingatan sesi")
+
+        for bad, label in (({"message": "  "}, "pesan kosong"),
+                           ({"message": "x" * 5000}, "pesan terlalu panjang")):
+            try:
+                call("POST", "/chat", bad)
+                print(f"FAIL: {label} seharusnya ditolak")
+                return 1
+            except urllib.error.HTTPError as e:
+                assert e.code == 400
+        print("OK  validasi: pesan kosong & terlalu panjang ditolak (400)")
+
+        test_agent()
+        test_token_auth()
+        test_persistence()
+        print("SELFTEST v6 LULUS: chat + streaming + sesi + token + agen/skill + gerbang konfirmasi + persistensi jalan.")
+        return 0
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except Exception:
+            proc.kill()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

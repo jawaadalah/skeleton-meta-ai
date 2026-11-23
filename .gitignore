@@ -1,0 +1,9 @@
+.env
+__pycache__/
+backend/data/
+*.pyc
+.gradle/
+build/
+app/build/
+local.properties
+.idea/
