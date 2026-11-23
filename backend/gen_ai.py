@@ -39,10 +39,12 @@ def validate_kotlin(code, pkg):
     # Pola rawan error kompilasi dari LLM: Handler/Runnable/Thread/Timer.
     if re.search(r"\b(Handler|Runnable|Thread|Timer)\b", code):
         return False
-    # Variabel yang mereferensikan dirinya sendiri pada inisialisasi.
-    for m in re.finditer(r"\b(?:val|var)\s+(\w+)\s*(?::[^=\n]+)?=", code):
+    # Variabel Runnable/lambda yang mereferensikan dirinya pada inisialisasi
+    # (pola spesifik penyebab error "must be initialized"). Self-ref umum
+    # sengaja tidak dicek: variabel normal memang langsung dipakai lagi.
+    for m in re.finditer(r"\b(?:val|var)\s+(\w+)\s*(?::[^=\n]+)?=\s*[^\n]*(?:Runnable|object\s*:|\{)", code):
         name = m.group(1)
-        seg = code[m.end():m.end() + 600]
+        seg = code[m.end():m.end() + 300]
         if re.search(r"\b" + re.escape(name) + r"\b", seg):
             return False
     allowed_prefixes = ("android.", "androidx.appcompat", "kotlin.", "java.lang", pkg)

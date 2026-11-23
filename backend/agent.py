@@ -219,9 +219,17 @@ def run_agent(message, session_id, history, llm_call, mock_reply_fn):
     return {"reply": reply, "steps": steps}
 
 
+_VERBATIM_SKILLS = {"buat_apk_android", "buat_aplikasi_android", "buat_game_android",
+                    "buat_halaman_web", "cek_apk"}
+
+
 def _compose(message, steps, history, llm_call, mock_reply_fn):
     """Rangkai jawaban akhir dari hasil skill."""
     last = steps[-1]
+    # Hasil skill generator/pabrik adalah pesan final faktual (status + link):
+    # tampilkan apa adanya — parafrase LLM rawan distorsi/penolakan karangan.
+    if last.get("skill") in _VERBATIM_SKILLS and last.get("result"):
+        return last["result"]
     if llm_call is None:
         return f"Hasil skill {last['skill']}: {last['result']}"
     convo = list(history[-10:])
