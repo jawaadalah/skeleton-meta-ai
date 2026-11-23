@@ -90,6 +90,7 @@ def deterministic_route(message):
         rest_low = rest.lower()
         jenis = "game" if "game" in rest_low else ("kalkulator" if "kalkulator" in rest_low else "landing")
         nama = re.sub(r"^(game|kalkulator)\s+", "", rest, flags=re.I).strip() or "Halamanku"
+        nama = nama.split(":")[0].strip(" ,") or "Halamanku"
         return "buat_halaman_web", {"nama": nama, "jenis": jenis, "deskripsi": text}
 
     if any(w in low for w in ("daftar proyek", "proyek yang sudah dibuat",
