@@ -9,6 +9,8 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Switch
+import android.text.method.LinkMovementMethod
+import android.text.util.Linkify
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONArray
@@ -306,6 +308,12 @@ class MainActivity : AppCompatActivity() {
             setBackgroundResource(if (fromUser) R.drawable.bubble_user else R.drawable.bubble_ai)
             // Tema gelap premium: teks agen terang di atas kartu gelap.
             setTextColor(if (fromUser) Color.WHITE else getColor(R.color.text_primary))
+            // v8: link unduh APK di balasan agen bisa diketuk.
+            if (!fromUser) {
+                Linkify.addLinks(this, Linkify.WEB_URLS)
+                movementMethod = LinkMovementMethod.getInstance()
+                setLinkTextColor(Color.parseColor("#4DD8FF"))
+            }
             // Lebar bubble maksimal ~85% layar agar nyaman dibaca.
             maxWidth = (resources.displayMetrics.widthPixels * 0.85).toInt()
         }
@@ -348,6 +356,11 @@ class MainActivity : AppCompatActivity() {
                     textSize = 16f
                     setBackgroundResource(if (fromUser) R.drawable.bubble_user else R.drawable.bubble_ai)
                     setTextColor(if (fromUser) Color.WHITE else getColor(R.color.text_primary))
+                    if (!fromUser) {
+                        Linkify.addLinks(this, Linkify.WEB_URLS)
+                        movementMethod = LinkMovementMethod.getInstance()
+                        setLinkTextColor(Color.parseColor("#4DD8FF"))
+                    }
                     maxWidth = (resources.displayMetrics.widthPixels * 0.85).toInt()
                 }
                 val params = LinearLayout.LayoutParams(
