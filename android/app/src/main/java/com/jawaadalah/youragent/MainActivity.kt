@@ -94,7 +94,6 @@ class MainActivity : AppCompatActivity() {
         window.statusBarColor = Color.TRANSPARENT
         window.navigationBarColor = Color.TRANSPARENT
         setContentView(R.layout.activity_main)
-        applyTheme()
         val root = findViewById<View>(R.id.rootLayout)
         WindowInsetsControllerCompat(window, root).apply {
             isAppearanceLightStatusBars = false
@@ -112,6 +111,9 @@ class MainActivity : AppCompatActivity() {
         editMessage = findViewById(R.id.editMessage)
         buttonSend = findViewById(R.id.buttonSend)
 
+        // SETELAH semua view terikat: applyTheme menyentuh editMessage dll.
+        // (v12.0/12.1 crash di sini — applyTheme dipanggil sebelum inisialisasi.)
+        applyTheme()
         restoreChat()
         if (shown.isEmpty()) {
             addBubble(

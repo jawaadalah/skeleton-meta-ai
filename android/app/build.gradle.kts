@@ -11,8 +11,8 @@ android {
         applicationId = "com.jawaadalah.youragent"
         minSdk = 24
         targetSdk = 35
-        versionCode = 13
-        versionName = "12.1"
+        versionCode = 14
+        versionName = "12.2"
     }
 
     // Tanda tangan debug TETAP (sejak v12.1): keystore yang sama di setiap
