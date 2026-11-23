@@ -197,7 +197,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun fetchQuota() {
-        val url = prefs.getString("backend_url", DEFAULT_URL)!!.trimEnd('/')
+        val url = backendUrl.trimEnd('/')
         executor.execute {
             try {
                 val conn = (URL(url + "/health").openConnection() as HttpURLConnection).apply {
