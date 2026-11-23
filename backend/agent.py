@@ -108,6 +108,14 @@ def deterministic_route(message):
     if m:
         return "buat_aplikasi_android", {"nama": m.group(1).strip(" :"), "deskripsi": text}
 
+    # v11 — integrasi n8n: "n8n: <teks>", "otomasi: <teks>", "kirim ke n8n <teks>"
+    m = re.match(r"(?:n8n|otomasi)\s*:\s*(.+)", text, flags=re.I | re.S)
+    if m:
+        return "kirim_ke_n8n", {"aksi": "perintah", "teks": m.group(1).strip()}
+    m = re.match(r"kirim\s+ke\s+n8n\s*[: ]\s*(.+)", text, flags=re.I | re.S)
+    if m:
+        return "kirim_ke_n8n", {"aksi": "perintah", "teks": m.group(1).strip()}
+
     if low.startswith(("catat:", "catat ", "simpan catatan")):
         teks = re.sub(r"^(catat[: ]+|simpan catatan[: ]+)", "", text, flags=re.I).strip()
         return "simpan_catatan", {"teks": teks or text}
@@ -221,7 +229,7 @@ def run_agent(message, session_id, history, llm_call, mock_reply_fn):
 
 
 _VERBATIM_SKILLS = {"buat_apk_android", "buat_aplikasi_android", "buat_game_android",
-                    "buat_halaman_web", "cek_apk"}
+                    "buat_halaman_web", "cek_apk", "kirim_ke_n8n"}
 
 
 def _compose(message, steps, history, llm_call, mock_reply_fn):

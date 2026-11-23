@@ -155,10 +155,10 @@ def test_v7():
 
     health = call("GET", "/health")
     assert health["version"] == "11.0" and health["soul"] is True, health
-    assert health["skills"] == 15, health
+    assert health["skills"] == 16, health
     soul = call("GET", "/soul")["soul"]
     assert "Skele" in soul, soul[:100]
-    print("OK  v7 /health: versi 11.0, SOUL.md termuat, 15 skill terdaftar; /soul terbaca")
+    print("OK  v7 /health: versi 11.0, SOUL.md termuat, 16 skill terdaftar; /soul terbaca")
 
     r = agent({"message": "ingat bahwa warna favorit saya biru langit", "session_id": "v7-tes"})
     assert r["steps"][0]["skill"] == "ingat", r

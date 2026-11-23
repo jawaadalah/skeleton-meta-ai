@@ -19,8 +19,10 @@ import html
 import ipaddress
 import json
 import operator
+import os
 import re
 import socket
+import urllib.error
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -259,6 +261,61 @@ def skill_cek_apk(args, ctx):
             f"Cek status build: {factory_mod.actions_url()}")
 
 
+# ---------------------------------------------------- integrasi n8n (v11) --
+def skill_kirim_ke_n8n(args, ctx):
+    """Kirim perintah/data ke workflow n8n lewat webhook produksi.
+
+    Tujuan HANYA dari env N8N_WEBHOOK_URL di server (bukan dari pesan user),
+    jadi skill ini tidak bisa dipakai sebagai proxy SSRF. Bila env
+    N8N_WEBHOOK_SECRET terisi, nilainya dikirim sebagai header
+    X-Webhook-Secret agar workflow n8n bisa memverifikasi pengirim.
+    Balasan JSON dari node 'Respond to Webhook' di n8n diteruskan ke user.
+    """
+    url = os.environ.get("N8N_WEBHOOK_URL", "").strip()
+    if not url:
+        return ("Error: integrasi n8n belum dikonfigurasi di server. "
+                "Isi N8N_WEBHOOK_URL di .env backend dengan URL webhook "
+                "produksi n8n (contoh: https://n8n.example.com/webhook/your-agent), "
+                "lalu restart/reload backend.")
+    teks = str(args.get("teks", "")).strip()
+    if not teks:
+        return "Error: parameter 'teks' kosong — tidak ada yang dikirim ke n8n."
+    payload = {
+        "source": "your-agent",
+        "session_id": ctx.get("session_id") or "default",
+        "aksi": str(args.get("aksi", "perintah")).strip() or "perintah",
+        "teks": teks,
+        "waktu": datetime.now(ZoneInfo("Asia/Jakarta")).isoformat(timespec="seconds"),
+    }
+    headers = {"Content-Type": "application/json",
+               "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                             "(KHTML, like Gecko) Chrome/120.0 Safari/537.36"}
+    secret = os.environ.get("N8N_WEBHOOK_SECRET", "").strip()
+    if secret:
+        headers["X-Webhook-Secret"] = secret
+    req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"),
+                                 headers=headers, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            raw = resp.read(20_000).decode("utf-8", "replace").strip()
+            status = resp.status
+    except urllib.error.HTTPError as e:
+        return f"Error: n8n menolak permintaan (HTTP {e.code}). Cek workflow n8n aktif & URL webhook benar."
+    except Exception as e:
+        return f"Error: tidak bisa menjangkau n8n ({e}). Cek server n8n hidup & N8N_WEBHOOK_URL benar."
+    if not raw:
+        return f"Terkirim ke n8n (HTTP {status}), workflow berjalan tanpa balasan teks."
+    try:
+        data = json.loads(raw)
+        if isinstance(data, dict):
+            pesan = data.get("pesan") or data.get("message") or data.get("reply")
+            if pesan:
+                return f"Balasan n8n: {pesan}"
+        return f"Balasan n8n (HTTP {status}): {raw[:1000]}"
+    except Exception:
+        return f"Balasan n8n (HTTP {status}): {raw[:1000]}"
+
+
 # --------------------------------------------------------------- registry ----
 SKILLS = {
     "kalkulator": {
@@ -335,6 +392,11 @@ SKILLS = {
         "organ": "kaki", "risk": "aman", "params": ["slug"],
         "description": "Mengecek apakah APK hasil pabrik (dari buat_apk_android) sudah jadi dan bisa diunduh.",
         "run": skill_cek_apk,
+    },
+    "kirim_ke_n8n": {
+        "organ": "tangan", "risk": "aman", "params": ["aksi", "teks"],
+        "description": "Mengirim perintah/data ke workflow otomasi n8n lewat webhook (URL tujuan diatur server lewat N8N_WEBHOOK_URL). Pakai saat pengguna berkata 'n8n: ...', 'otomasi: ...', atau 'kirim ke n8n ...'. Balasan workflow n8n diteruskan ke pengguna.",
+        "run": skill_kirim_ke_n8n,
     },
 }
 

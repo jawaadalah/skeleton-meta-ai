@@ -151,6 +151,31 @@
                 android:trackTint="@color/accent_violet" />
         </LinearLayout>
 
+
+        <!-- Tampilan -->
+        <LinearLayout
+            style="@style/Widget.YourAgent.SettingsCard">
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsTitle"
+                android:text="Tampilan" />
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsLabel"
+                android:text="Tema aplikasi" />
+
+            <Spinner
+                android:id="@+id/spinnerTheme"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_edit_pill"
+                android:padding="6dp" />
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsHint"
+                android:text="Tema berlaku untuk layar chat; layar chat dimuat ulang otomatis saat tema diganti." />
+        </LinearLayout>
+
         <!-- Tentang -->
         <LinearLayout
             style="@style/Widget.YourAgent.SettingsCard">

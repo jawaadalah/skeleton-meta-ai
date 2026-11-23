@@ -2,6 +2,8 @@ package com.jawaadalah.youragent
 
 import android.app.AlertDialog
 import android.content.Intent
+import android.content.res.ColorStateList
+import android.graphics.drawable.GradientDrawable
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
@@ -87,7 +89,12 @@ class MainActivity : AppCompatActivity() {
 
         // Edge-to-edge: gambar di belakang system bars, atur padding via insets.
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        // Fullscreen tepi-ke-tepi: bar sistem transparan, gradasi aplikasi
+        // mengisi sampai tepi atas & bawah layar (v12).
+        window.statusBarColor = Color.TRANSPARENT
+        window.navigationBarColor = Color.TRANSPARENT
         setContentView(R.layout.activity_main)
+        applyTheme()
         val root = findViewById<View>(R.id.rootLayout)
         WindowInsetsControllerCompat(window, root).apply {
             isAppearanceLightStatusBars = false
@@ -114,6 +121,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<Switch>(R.id.switchAgent).isChecked = prefs.getBoolean("agent_default", false)
+        paintAgentSwitch()
+        findViewById<Switch>(R.id.switchAgent).setOnCheckedChangeListener { _, _ -> paintAgentSwitch() }
         buttonSend.setOnClickListener { trySend() }
         editMessage.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEND) { trySend(); true } else false
@@ -181,7 +190,7 @@ class MainActivity : AppCompatActivity() {
         addBubble(text, fromUser = true, save = true)
         setBusy(true)
         val bubble = addBubble("", fromUser = false, save = false)
-        startTyping(bubble, "Skele sedang berpikir")
+        startProcessLog(bubble, listOf("Menghubungi backend", "Skele sedang berpikir", "Menyusun jawaban"))
         executor.execute {
             val display = try {
                 val body = JSONObject().put("message", text).put("session_id", sessionId)
@@ -205,7 +214,7 @@ class MainActivity : AppCompatActivity() {
                 friendlyError(e)
             }
             runOnUiThread {
-                stopTyping()
+                stopProcessLog()
                 setBubbleFormatted(bubble, display)
                 shown.add(false to display)
                 saveChat()
@@ -213,6 +222,95 @@ class MainActivity : AppCompatActivity() {
                 scrollChat.post { scrollChat.fullScroll(ScrollView.FOCUS_DOWN) }
             }
         }
+    }
+
+
+    // ------------------------------------------------------------ tema (v12) --
+    /** Palet tema aplikasi: 0 Premium Navy, 1 Terang, 2 AMOLED. */
+    private data class ThemeColors(val bgTop: Int, val bgBottom: Int, val surface: Int,
+                                   val input: Int, val textPri: Int, val textSec: Int,
+                                   val bubbleAi: Int)
+
+    private lateinit var theme: ThemeColors
+    private var appliedTheme = -1
+
+    private fun themeColors(): ThemeColors = when (prefs.getInt("tema", 0)) {
+        1 -> ThemeColors(Color.parseColor("#F2F5FA"), Color.parseColor("#E4EBF8"),
+            Color.WHITE, Color.WHITE, Color.parseColor("#14213D"),
+            Color.parseColor("#5A6B8C"), Color.WHITE)
+        2 -> ThemeColors(Color.BLACK, Color.BLACK, Color.parseColor("#0D0D10"),
+            Color.parseColor("#111114"), Color.parseColor("#E8EDF7"),
+            Color.parseColor("#9AA7C2"), Color.parseColor("#111114"))
+        else -> ThemeColors(Color.parseColor("#0B1020"), Color.parseColor("#0A1230"),
+            Color.parseColor("#121830"), Color.parseColor("#1C2442"),
+            Color.parseColor("#EDF1FF"), Color.parseColor("#9AA6C7"),
+            Color.parseColor("#1A2138"))
+    }
+
+    private fun roundedBg(color: Int, radiusDp: Float): GradientDrawable =
+        GradientDrawable().apply {
+            setColor(color)
+            cornerRadius = radiusDp * resources.displayMetrics.density
+        }
+
+    /** Terapkan tema ke rangka layar utama (bubble diatur per-bubble). */
+    private fun applyTheme() {
+        theme = themeColors()
+        appliedTheme = prefs.getInt("tema", 0)
+        findViewById<LinearLayout>(R.id.rootLayout).background =
+            GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(theme.bgTop, theme.bgBottom))
+        findViewById<LinearLayout>(R.id.agentBar).background = roundedBg(theme.surface, 18f)
+        findViewById<Switch>(R.id.switchAgent).setTextColor(theme.textPri)
+        editMessage.background = roundedBg(theme.input, 24f)
+        editMessage.setTextColor(theme.textPri)
+        editMessage.setHintTextColor(theme.textSec)
+    }
+
+    /** Warna sakelar Mode Agen: hijau LIVE / merah MATI + label status. */
+    private fun paintAgentSwitch() {
+        val sw = findViewById<Switch>(R.id.switchAgent)
+        val green = Color.parseColor("#22C55E")
+        val red = Color.parseColor("#EF4444")
+        val c = if (sw.isChecked) green else red
+        sw.thumbTintList = ColorStateList.valueOf(c)
+        sw.trackTintList = ColorStateList.valueOf(
+            Color.argb(110, Color.red(c), Color.green(c), Color.blue(c)))
+        val st = findViewById<TextView>(R.id.textAgentStatus)
+        st.text = if (sw.isChecked) "● LIVE" else "● MATI"
+        st.setTextColor(c)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (appliedTheme != -1 && prefs.getInt("tema", 0) != appliedTheme) recreate()
+    }
+
+    // ------------------------------------------------------- log proses live --
+    private var logHandler: Handler? = null
+
+    /** Log proses live di bubble: fase berjalan + timer detik, sampai selesai. */
+    private fun startProcessLog(bubble: TextView, phases: List<String>) {
+        stopProcessLog()
+        val h = Handler(Looper.getMainLooper())
+        logHandler = h
+        val start = System.currentTimeMillis()
+        var tick = 0
+        val runner = object : Runnable {
+            override fun run() {
+                val elapsed = (System.currentTimeMillis() - start) / 1000
+                val phase = phases[minOf(tick / 2, phases.size - 1)]
+                bubble.text = "⏳ " + phase + " • " + elapsed + "d"
+                tick++
+                h.postDelayed(this, 1000)
+            }
+        }
+        h.post(runner)
+    }
+
+    private fun stopProcessLog() {
+        logHandler?.removeCallbacksAndMessages(null)
+        logHandler = null
     }
 
     // ------------------------------------------------------------- chat SSE --
@@ -293,7 +391,8 @@ class MainActivity : AppCompatActivity() {
         addBubble(text, fromUser = true, save = true)
         setBusy(true)
         val bubble = addBubble("", fromUser = false, save = false)
-        startTyping(bubble, "Agen sedang bekerja")
+        startProcessLog(bubble, listOf("Menghubungi backend", "Agen merencanakan langkah",
+            "Menjalankan skill", "Menyusun jawaban"))
 
         executor.execute {
             var display = ""
@@ -305,7 +404,7 @@ class MainActivity : AppCompatActivity() {
                 val steps = json.optJSONArray("steps")
                 if (steps != null && steps.length() > 0) {
                     val names = (0 until steps.length()).map { steps.getJSONObject(it).optString("skill") }
-                    display += "\n\n— Jejak agen: " + names.joinToString(", ")
+                    display += "\n\n— Log proses:\n" + names.joinToString("\n") { "✓ " + it + " — selesai" }
                 }
                 if (json.optBoolean("needs_confirmation")) {
                     confirmToken = json.optString("confirm_token")
@@ -317,7 +416,7 @@ class MainActivity : AppCompatActivity() {
             val token = confirmToken
             val skillName = proposed
             runOnUiThread {
-                stopTyping()
+                stopProcessLog()
                 setBubbleFormatted(bubble, display)
                 shown.add(false to display)
                 saveChat()
@@ -404,8 +503,16 @@ class MainActivity : AppCompatActivity() {
         val rawText = text
         val bubble = TextView(this).apply {
             textSize = 15.5f
-            setBackgroundResource(if (fromUser) R.drawable.bubble_user else R.drawable.bubble_ai)
-            setTextColor(if (fromUser) Color.WHITE else getColor(R.color.text_primary))
+            if (fromUser) {
+                setBackgroundResource(R.drawable.bubble_user)
+                setTextColor(Color.WHITE)
+            } else if (prefs.getInt("tema", 0) == 0) {
+                setBackgroundResource(R.drawable.bubble_ai)
+                setTextColor(getColor(R.color.text_primary))
+            } else {
+                background = roundedBg(theme.bubbleAi, 18f)
+                setTextColor(theme.textPri)
+            }
             setLineSpacing(0f, 1.12f)
             if (fromUser) {
                 this.text = rawText

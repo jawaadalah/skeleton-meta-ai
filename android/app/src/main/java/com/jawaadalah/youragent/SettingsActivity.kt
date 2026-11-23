@@ -43,6 +43,8 @@ class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+        window.navigationBarColor = android.graphics.Color.TRANSPARENT
         setContentView(R.layout.activity_settings)
         val root = findViewById<View>(R.id.settingsRoot)
         WindowInsetsControllerCompat(window, root).apply {
@@ -61,6 +63,12 @@ class SettingsActivity : AppCompatActivity() {
         val editBase = findViewById<EditText>(R.id.editLlmBase)
         val editModel = findViewById<EditText>(R.id.editLlmModel)
         val editKey = findViewById<EditText>(R.id.editLlmKey)
+        val spinnerTheme = findViewById<Spinner>(R.id.spinnerTheme)
+        val themeNames = listOf("Premium Navy (gelap)", "Terang", "AMOLED (hitam pekat)")
+        val themeAdapter = ArrayAdapter(this, R.layout.spinner_item, themeNames)
+        themeAdapter.setDropDownViewResource(R.layout.spinner_dropdown)
+        spinnerTheme.adapter = themeAdapter
+        spinnerTheme.setSelection(prefs.getInt("tema", 0).coerceIn(0, themeNames.size - 1))
         val switchAgentDefault = findViewById<Switch>(R.id.switchAgentDefault)
         val switchStreaming = findViewById<Switch>(R.id.switchStreaming)
 
@@ -118,6 +126,7 @@ class SettingsActivity : AppCompatActivity() {
                 .putString("llm_base_url", editBase.text.toString().trim())
                 .putString("llm_model", editModel.text.toString().trim())
                 .putString("llm_api_key", editKey.text.toString().trim())
+                .putInt("tema", spinnerTheme.selectedItemPosition)
                 .putBoolean("agent_default", switchAgentDefault.isChecked)
                 .putBoolean("streaming", switchStreaming.isChecked)
                 .apply()

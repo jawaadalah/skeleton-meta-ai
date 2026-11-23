@@ -55,6 +55,7 @@
 
     <!-- Baris Mode Agen -->
     <LinearLayout
+        android:id="@+id/agentBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="14dp"
@@ -70,16 +71,24 @@
 
         <Switch
             android:id="@+id/switchAgent"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:paddingStart="10dp"
             android:paddingTop="8dp"
             android:paddingBottom="8dp"
             android:text="Mode Agen — otak + skill: hitung, web, catatan, memori, generator"
             android:textColor="@color/text_primary"
-            android:textSize="13.5sp"
-            android:thumbTint="@color/accent_cyan"
-            android:trackTint="@color/accent_violet" />
+            android:textSize="13.5sp" />
+
+        <TextView
+            android:id="@+id/textAgentStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="end"
+            android:text="● MATI"
+            android:textSize="12sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
     <!-- Area chat -->
