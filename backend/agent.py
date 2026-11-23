@@ -65,10 +65,13 @@ def deterministic_route(message):
         if gm and ("game" in low):
             nama = re.sub(r"\b(jadi|menjadi|bentuk|file|apk|android|simpel|sederhana)\b", "",
                           gm.group(1), flags=re.I).strip(" :") or "Game Ketuk Target"
+            # Nama proyek berhenti di ':' pertama — sisanya deskripsi.
+            nama = nama.split(":")[0].strip(" ,") or "Game Ketuk Target"
             return "buat_apk_android", {"nama": nama, "jenis": "game", "deskripsi": text}
         if am:
             nama = re.sub(r"\b(jadi|menjadi|bentuk|file|apk|android|simpel|sederhana)\b", "",
                           am.group(1), flags=re.I).strip(" :") or "AplikasiKu"
+            nama = nama.split(":")[0].strip(" ,") or "AplikasiKu"
             return "buat_apk_android", {"nama": nama, "jenis": "aplikasi", "deskripsi": text}
 
     # v7 — generator proyek (Android / game / web) — nama diambil dari teks asli
