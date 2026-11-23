@@ -304,7 +304,10 @@ class MainActivity : AppCompatActivity() {
             this.text = text
             textSize = 16f
             setBackgroundResource(if (fromUser) R.drawable.bubble_user else R.drawable.bubble_ai)
-            setTextColor(if (fromUser) Color.WHITE else Color.BLACK)
+            // Tema gelap premium: teks agen terang di atas kartu gelap.
+            setTextColor(if (fromUser) Color.WHITE else getColor(R.color.text_primary))
+            // Lebar bubble maksimal ~85% layar agar nyaman dibaca.
+            maxWidth = (resources.displayMetrics.widthPixels * 0.85).toInt()
         }
         val params = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -344,7 +347,8 @@ class MainActivity : AppCompatActivity() {
                     this.text = text
                     textSize = 16f
                     setBackgroundResource(if (fromUser) R.drawable.bubble_user else R.drawable.bubble_ai)
-                    setTextColor(if (fromUser) Color.WHITE else Color.BLACK)
+                    setTextColor(if (fromUser) Color.WHITE else getColor(R.color.text_primary))
+                    maxWidth = (resources.displayMetrics.widthPixels * 0.85).toInt()
                 }
                 val params = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,

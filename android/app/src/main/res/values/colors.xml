@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Palet premium Your Agent: navy pekat + gradasi cyan ke ungu -->
+    <color name="bg_navy">#0B1020</color>
+    <color name="bg_navy_deep">#070B18</color>
+    <color name="surface_card">#1A2138</color>
+    <color name="surface_bar">#121830</color>
+    <color name="surface_input">#1C2442</color>
+    <color name="stroke_soft">#2A3352</color>
+
+    <color name="accent_cyan">#22D3EE</color>
+    <color name="accent_blue">#3B82F6</color>
+    <color name="accent_violet">#8B5CF6</color>
+
+    <color name="text_primary">#EDF1FF</color>
+    <color name="text_secondary">#9AA6C7</color>
+    <color name="text_on_gradient">#FFFFFF</color>
+    <color name="text_hint">#6B7699</color>
+</resources>
