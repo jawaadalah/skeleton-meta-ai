@@ -124,7 +124,11 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Switch>(R.id.switchAgent).isChecked = prefs.getBoolean("agent_default", false)
         paintAgentSwitch()
-        findViewById<Switch>(R.id.switchAgent).setOnCheckedChangeListener { _, _ -> paintAgentSwitch() }
+        findViewById<Switch>(R.id.switchAgent).setOnCheckedChangeListener { _, checked ->
+            // Sakelar header = cermin pengaturan tersimpan (auto on/off).
+            prefs.edit().putBoolean("agent_default", checked).apply()
+            paintAgentSwitch()
+        }
         buttonSend.setOnClickListener { trySend() }
         editMessage.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEND) { trySend(); true } else false
@@ -262,8 +266,6 @@ class MainActivity : AppCompatActivity() {
         findViewById<LinearLayout>(R.id.rootLayout).background =
             GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
                 intArrayOf(theme.bgTop, theme.bgBottom))
-        findViewById<LinearLayout>(R.id.agentBar).background = roundedBg(theme.surface, 18f)
-        findViewById<Switch>(R.id.switchAgent).setTextColor(theme.textPri)
         editMessage.background = roundedBg(theme.input, 24f)
         editMessage.setTextColor(theme.textPri)
         editMessage.setHintTextColor(theme.textSec)
@@ -278,13 +280,15 @@ class MainActivity : AppCompatActivity() {
         sw.thumbTintList = ColorStateList.valueOf(c)
         sw.trackTintList = ColorStateList.valueOf(
             Color.argb(110, Color.red(c), Color.green(c), Color.blue(c)))
-        val st = findViewById<TextView>(R.id.textAgentStatus)
-        st.text = if (sw.isChecked) "● LIVE" else "● MATI"
-        st.setTextColor(c)
     }
 
     override fun onResume() {
         super.onResume()
+        // Sinkronkan sakelar header dengan pengaturan yang tersimpan.
+        val sw = findViewById<Switch>(R.id.switchAgent)
+        val saved = prefs.getBoolean("agent_default", false)
+        if (sw.isChecked != saved) sw.isChecked = saved
+        paintAgentSwitch()
         if (appliedTheme != -1 && prefs.getInt("tema", 0) != appliedTheme) recreate()
     }
 
