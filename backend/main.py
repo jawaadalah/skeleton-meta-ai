@@ -67,7 +67,7 @@ def load_env():
 load_env()
 
 API_KEY = os.environ.get("META_API_KEY", "").strip()
-BASE_URL = os.environ.get("META_API_BASE_URL", "https://api.llama.com/v1").rstrip("/")
+BASE_URL = (os.environ.get("META_API_BASE_URL") or os.environ.get("META_API_BASE") or "https://api.llama.com/v1").rstrip("/")
 MODEL = os.environ.get("META_MODEL", "Llama-4-Maverick-17B-128E-Instruct-FP8")
 PORT = int(os.environ.get("PORT", "8000"))
 SYSTEM_PROMPT = os.environ.get(
