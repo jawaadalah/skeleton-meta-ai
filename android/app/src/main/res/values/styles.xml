@@ -41,7 +41,7 @@
     </style>
 
     <!-- Kartu & field di layar Pengaturan (v11) -->
-    <style name="Widget.YourAgent.SettingsCard">
+    <style name="Widget.YourAgent.SettingsCard" parent="">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">14dp</item>
@@ -50,7 +50,7 @@
         <item name="android:padding">16dp</item>
     </style>
 
-    <style name="Widget.YourAgent.SettingsTitle">
+    <style name="Widget.YourAgent.SettingsTitle" parent="">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:textColor">@color/text_primary</item>
@@ -58,7 +58,7 @@
         <item name="android:textStyle">bold</item>
     </style>
 
-    <style name="Widget.YourAgent.SettingsLabel">
+    <style name="Widget.YourAgent.SettingsLabel" parent="">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">12dp</item>
@@ -66,7 +66,7 @@
         <item name="android:textSize">12.5sp</item>
     </style>
 
-    <style name="Widget.YourAgent.SettingsHint">
+    <style name="Widget.YourAgent.SettingsHint" parent="">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">6dp</item>
@@ -74,7 +74,7 @@
         <item name="android:textSize">12sp</item>
     </style>
 
-    <style name="Widget.YourAgent.SettingsField">
+    <style name="Widget.YourAgent.SettingsField" parent="">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">6dp</item>
