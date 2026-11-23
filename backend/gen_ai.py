@@ -128,7 +128,8 @@ def custom_web(llm, nama, jenis, deskripsi):
 
 # ------------------------------------------------------------ fullstack ------
 _PY_STDLIB_OK = {"http", "json", "os", "sys", "re", "threading", "datetime",
-                 "pathlib", "urllib", "html", "time", "math", "random"}
+                 "pathlib", "urllib", "html", "time", "math", "random", "sqlite3",
+                 "collections", "typing", "functools", "itertools"}
 _PY_FORBIDDEN = ("subprocess", "eval(", "exec(", "__import__", "socket",
                  "os.system", "os.popen", "shutil.rmtree", "requests")
 
@@ -177,6 +178,14 @@ def fullstack_bundle(llm, nama, deskripsi):
              "- Balas HANYA isi file server.py, tanpa penjelasan, tanpa pagar kode."},
             {"role": "user", "content": "Tulis server.py untuk: " + instr}])
         server = _strip_fences(raw_server or "")
+        # LLM kadang memberi prosa sebelum kode — potong dari baris kode pertama
+        # (pola yang sama seperti jalur Kotlin memotong dari "package ").
+        lines = server.split("\n")
+        for i, ln in enumerate(lines):
+            ls = ln.lstrip()
+            if ls.startswith(("#!", "import ", "from ", "# ")):
+                server = "\n".join(lines[i:])
+                break
         if not validate_python_server(server):
             return None, None
         raw_html = llm([
@@ -191,6 +200,10 @@ def fullstack_bundle(llm, nama, deskripsi):
              "- Balas HANYA isi file index.html lengkap, tanpa penjelasan."},
             {"role": "user", "content": "Tulis index.html untuk: " + instr}])
         html = _strip_fences(raw_html or "")
+        if not html.lstrip().startswith("<"):
+            idx = html.find("<")
+            if idx > 0:
+                html = html[idx:]
         if not validate_html(html) or "fetch(" not in html or "/api/" not in html:
             return None, None
         return server, html
