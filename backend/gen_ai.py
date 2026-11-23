@@ -36,6 +36,15 @@ def validate_kotlin(code, pkg):
         return False
     if any(bad in code for bad in _FORBIDDEN):
         return False
+    # Pola rawan error kompilasi dari LLM: Handler/Runnable/Thread/Timer.
+    if re.search(r"\b(Handler|Runnable|Thread|Timer)\b", code):
+        return False
+    # Variabel yang mereferensikan dirinya sendiri pada inisialisasi.
+    for m in re.finditer(r"\b(?:val|var)\s+(\w+)\s*(?::[^=\n]+)?=", code):
+        name = m.group(1)
+        seg = code[m.end():m.end() + 600]
+        if re.search(r"\b" + re.escape(name) + r"\b", seg):
+            return False
     allowed_prefixes = ("android.", "androidx.appcompat", "kotlin.", "java.lang", pkg)
     for imp in re.findall(r"^import\s+([\w.]+)", code, flags=re.M):
         if not imp.startswith(allowed_prefixes):
@@ -65,6 +74,10 @@ def custom_activity(llm, nama, jenis, deskripsi, pkg):
         "- Hanya satu kelas publik: MainActivity : AppCompatActivity; kelas bantu boleh di file yang sama.\n"
         "- Impor hanya dari: android.*, androidx.appcompat.app.AppCompatActivity, kotlin.*.\n"
         "- TANPA internet, TANPA file, TANPA library eksternal, TANPA XML layout (semua dari kode).\n"
+        "- Loop game WAJIB postInvalidateDelayed(16) di akhir onDraw. DILARANG memakai Handler, "
+        "Runnable, Thread, Timer, dan coroutine (rawan error inisialisasi).\n"
+        "- Semua variabel harus diinisialisasi sebelum dipakai; jangan mereferensikan variabel "
+        "di dalam inisialisasinya sendiri.\n"
         "- Kode harus lengkap & bisa dikompilasi apa adanya. Balas HANYA kode Kotlin — tanpa markdown, tanpa penjelasan.")
     try:
         raw = llm([{"role": "user", "content": prompt}])
