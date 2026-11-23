@@ -182,42 +182,32 @@ def application(environ, start_response):
         return _json(start_response, 200, {})
 
     if method == "GET":
-        if path == "/nettest2":
-            import http.client as _hc
+        if path == "/nettest3":
             import urllib.request as _u
-            ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
-            body = json.dumps({"model": "llama-3.3-70b-versatile",
-                               "messages": [{"role": "user", "content": "hi"}]}).encode()
-            out = {}
-
-            def probe(label, url, data=None, auth=True):
-                hdrs = {"User-Agent": ua, "Content-Type": "application/json"}
-                if auth:
-                    hdrs["Authorization"] = "Bearer gsk_dummy"
-                req = _u.Request(url, data=data, headers=hdrs,
-                                 method="POST" if data else "GET")
-                try:
-                    _u.urlopen(req, timeout=15)
-                    out[label] = 200
-                except urllib.error.HTTPError as e:
-                    out[label] = f"HTTP {e.code}"
-                except Exception as e:
-                    out[label] = f"ERR {str(e)[:110]}"
-
-            probe("post_chat_auth", "https://api.groq.com/openai/v1/chat/completions", body, True)
-            probe("post_chat_noauth", "https://api.groq.com/openai/v1/chat/completions", body, False)
-            probe("post_models_auth", "https://api.groq.com/openai/v1/models", body, True)
-            probe("get_chat_auth", "https://api.groq.com/openai/v1/chat/completions", None, True)
+            out = {"base_url": repr(bm.BASE_URL), "model": bm.MODEL,
+                   "key_len": len(bm.API_KEY or "")}
             try:
-                conn = _hc.HTTPSConnection("proxy.server", 3128, timeout=15)
-                conn.set_tunnel("api.groq.com", 443)
-                conn.request("POST", "/openai/v1/chat/completions", body=body,
-                             headers={"User-Agent": ua, "Content-Type": "application/json",
-                                      "Authorization": "Bearer gsk_dummy",
-                                      "Host": "api.groq.com"})
-                out["manual_tunnel"] = f"HTTP {conn.getresponse().status}"
+                out["ask_meta"] = bm.ask_meta([{"role": "user", "content": "jawab: 2+2?"}])[:80]
             except Exception as e:
-                out["manual_tunnel"] = f"ERR {str(e)[:110]}"
+                out["ask_meta"] = f"ERR {type(e).__name__} {str(e)[:130]}"
+            ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+            for label, msgs in (("probe_key_small", [{"role": "user", "content": "hi"}]),
+                                ("probe_key_full", None)):
+                payload = {"model": bm.MODEL,
+                           "messages": msgs if msgs is not None else bm._system_messages() + [{"role": "user", "content": "hi"}]}
+                req = _u.Request(f"{bm.BASE_URL}/chat/completions",
+                                 data=json.dumps(payload).encode(),
+                                 headers={"Content-Type": "application/json",
+                                          "Authorization": f"Bearer {bm.API_KEY}",
+                                          "User-Agent": ua},
+                                 method="POST")
+                try:
+                    with _u.urlopen(req, timeout=30) as r:
+                        out[label] = f"HTTP {r.status}"
+                except urllib.error.HTTPError as e:
+                    out[label] = f"HTTP {e.code} {e.read().decode('utf-8', 'replace')[:80]}"
+                except Exception as e:
+                    out[label] = f"ERR {type(e).__name__} {str(e)[:130]}"
             return _json(start_response, 200, out)
         if path in ("/soul", "/memory"):
             if bm.APP_TOKEN and environ.get("HTTP_X_APP_TOKEN", "") != bm.APP_TOKEN:
