@@ -10,7 +10,13 @@ import android.widget.Spinner
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
+import android.os.Handler
+import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.concurrent.Executors
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -28,6 +34,61 @@ import androidx.core.view.WindowInsetsControllerCompat
 class SettingsActivity : AppCompatActivity() {
 
     private val prefs by lazy { getSharedPreferences("skeleton", MODE_PRIVATE) }
+    private val quotaExecutor = Executors.newSingleThreadExecutor()
+    private val quotaHandler = Handler(Looper.getMainLooper())
+    private lateinit var textQuota: TextView
+    private val quotaPoll = object : Runnable {
+        override fun run() {
+            loadQuota()
+            quotaHandler.postDelayed(this, 20_000)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::textQuota.isInitialized) quotaHandler.post(quotaPoll)
+    }
+
+    override fun onPause() {
+        quotaHandler.removeCallbacks(quotaPoll)
+        super.onPause()
+    }
+
+    private fun loadQuota() {
+        val base = (prefs.getString("backend_url", "https://jawaadalah.pythonanywhere.com")
+            ?: "https://jawaadalah.pythonanywhere.com").trimEnd('/')
+        quotaExecutor.execute {
+            try {
+                val conn = (URL(base + "/health").openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 8000
+                    readTimeout = 8000
+                }
+                val health = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
+                val fmt = java.text.NumberFormat.getInstance(java.util.Locale("id", "ID"))
+                val quota = health.optJSONObject("quota")
+                val text = if (quota == null) {
+                    "Model aktif: " + health.optString("model", "-") + "\n" +
+                        "Sisa kuota belum terbaca — server menangkapnya setelah permintaan AI " +
+                        "pertama sejak dinyalakan. Kirim satu pesan chat dulu, lalu kembali ke sini."
+                } else {
+                    fun n(key: String): String {
+                        val v = quota.optLong(key, -1)
+                        return if (v >= 0) fmt.format(v) else "?"
+                    }
+                    val reset = quota.optString("reset_tokens", "")
+                    "Model aktif: " + health.optString("model", "-") + "\n" +
+                        "🪙 Sisa token: " + n("remaining_tokens") + " / " + n("limit_tokens") + "\n" +
+                        "📨 Sisa permintaan: " + n("remaining_requests") + " / " + n("limit_requests") +
+                        (if (reset.isNotEmpty()) "\n⏳ Token di-reset dalam: " + reset else "")
+                }
+                runOnUiThread { if (::textQuota.isInitialized) textQuota.text = text }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    if (::textQuota.isInitialized) textQuota.text = "Gagal memuat kuota: " + (e.message ?: "koneksi bermasalah")
+                }
+            }
+        }
+    }
 
     private data class Preset(val nama: String, val baseUrl: String, val model: String)
 
@@ -104,6 +165,8 @@ class SettingsActivity : AppCompatActivity() {
         } catch (_: Exception) {
             "?"
         }
+        textQuota = findViewById(R.id.textQuota)
+        loadQuota()
         findViewById<TextView>(R.id.textAbout).text =
             "Your Agent v$versionName — asisten AI pribadi dengan Mode Agen dan Pabrik APK.\n\n" +
                 "Fitur utama:\n" +
@@ -111,6 +174,7 @@ class SettingsActivity : AppCompatActivity() {
                 "• Mode Agen: 15 skill — kalkulator, catatan, ingatan jangka panjang, ambil web, generator proyek\n" +
                 "• Pabrik APK: buat aplikasi & game Android jadi file APK asli dari chat\n" +
                 "• Generator Cerdas: kode ditulis AI mengikuti instruksimu, dicek validator, fallback template\n" +
+                "• Info token per balasan + sisa kuota backend live (strip di layar utama & kartu Kuota di sini)\n" +
                 "• Gerbang konfirmasi untuk aksi merusak\n" +
                 "• Riwayat chat lokal + sesi & ingatan tersimpan di backend\n\n" +
                 "Backend: jawaadalah.pythonanywhere.com\n" +

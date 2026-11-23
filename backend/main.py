@@ -49,7 +49,7 @@ import memory_store as memory_mod
 import skills as skills_mod
 import store as store_mod
 
-VERSION = "11.2"
+VERSION = "11.3"
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -133,6 +133,39 @@ def _add_usage(u):
     d["calls"] += 1
 
 
+_LAST_QUOTA = {}
+
+
+def _capture_quota(headers):
+    """Simpan snapshot kuota dari header x-ratelimit-* provider (Groq dkk)."""
+    if headers is None:
+        return
+    keys = {
+        "x-ratelimit-limit-requests": "limit_requests",
+        "x-ratelimit-remaining-requests": "remaining_requests",
+        "x-ratelimit-limit-tokens": "limit_tokens",
+        "x-ratelimit-remaining-tokens": "remaining_tokens",
+        "x-ratelimit-reset-requests": "reset_requests",
+        "x-ratelimit-reset-tokens": "reset_tokens",
+    }
+    snap = {}
+    for hk, name in keys.items():
+        v = headers.get(hk)
+        if v is not None:
+            try:
+                snap[name] = int(v)
+            except (TypeError, ValueError):
+                snap[name] = v
+    if snap:
+        snap["model"] = MODEL
+        _LAST_QUOTA.clear()
+        _LAST_QUOTA.update(snap)
+
+
+def _get_quota():
+    return dict(_LAST_QUOTA) if _LAST_QUOTA else None
+
+
 def _get_usage():
     d = getattr(_usage_local, "data", None)
     if not d or not d.get("calls"):
@@ -179,10 +212,13 @@ def ask_meta(messages, override=None):
         )
         try:
             with urllib.request.urlopen(req, timeout=60) as resp:
+                _capture_quota(resp.headers)
                 data = json.loads(resp.read().decode("utf-8"))
             _add_usage(data.get("usage"))
             return data["choices"][0]["message"]["content"]
         except Exception as e:  # noqa: BLE001 - retry hanya untuk 429/5xx
+            if isinstance(e, urllib.error.HTTPError):
+                _capture_quota(e.headers)
             last_err = e
             if not _retryable(e):
                 raise
@@ -207,6 +243,7 @@ def stream_meta(messages, override=None):
             time.sleep(wait)
         try:
             resp = urllib.request.urlopen(req, timeout=120)
+            _capture_quota(resp.headers)
             break
         except Exception as e:  # noqa: BLE001
             last_err = e
@@ -286,7 +323,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, {"status": "ok", "version": VERSION,
                               "mode": "mock" if MOCK else "live", "model": MODEL,
                               "auth": bool(APP_TOKEN), "soul": bool(SOUL_TEXT),
-                              "skills": len(skills_mod.SKILLS)})
+                              "skills": len(skills_mod.SKILLS),
+                          "quota": _get_quota()})
         else:
             self._json(404, {"error": "not found"})
 
@@ -370,6 +408,9 @@ class Handler(BaseHTTPRequestHandler):
         usage = _get_usage()
         if usage:
             out["usage"] = usage
+        quota = _get_quota()
+        if quota:
+            out["quota"] = quota
         self._json(200, out)
 
     def _handle_agent(self):
@@ -425,6 +466,9 @@ class Handler(BaseHTTPRequestHandler):
         usage = _get_usage()
         if usage:
             result["usage"] = usage
+        quota = _get_quota()
+        if quota:
+            result["quota"] = quota
         self._json(200, result)
 
     def _remember(self, session_id, history, user_text, reply):
@@ -463,6 +507,9 @@ class Handler(BaseHTTPRequestHandler):
         usage = _get_usage()
         if usage:
             done_obj["usage"] = usage
+        quota = _get_quota()
+        if quota:
+            done_obj["quota"] = quota
         self._sse(done_obj)
 
     def log_message(self, fmt, *args):

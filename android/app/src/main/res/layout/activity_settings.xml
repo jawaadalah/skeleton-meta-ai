@@ -176,6 +176,29 @@
                 android:text="Tema berlaku untuk layar chat; layar chat dimuat ulang otomatis saat tema diganti." />
         </LinearLayout>
 
+        <!-- Kuota & Limit Backend -->
+        <LinearLayout
+            style="@style/Widget.YourAgent.SettingsCard">
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsTitle"
+                android:text="Kuota &amp; Limit Backend" />
+
+            <TextView
+                android:id="@+id/textQuota"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="6dp"
+                android:lineSpacingMultiplier="1.2"
+                android:text="Memuat kuota dari server…"
+                android:textColor="@color/text_secondary"
+                android:textSize="13.5sp" />
+
+            <TextView
+                style="@style/Widget.YourAgent.SettingsHint"
+                android:text="Diperbarui otomatis tiap 20 detik selama halaman ini terbuka, dan setiap selesai mengobrol di layar utama." />
+        </LinearLayout>
+
         <!-- Tentang -->
         <LinearLayout
             style="@style/Widget.YourAgent.SettingsCard">

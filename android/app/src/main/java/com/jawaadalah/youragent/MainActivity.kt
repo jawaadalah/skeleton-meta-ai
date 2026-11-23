@@ -108,6 +108,8 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
+        quotaBar = findViewById(R.id.quotaBar)
+        textQuotaLive = findViewById(R.id.textQuotaLive)
         chatContainer = findViewById(R.id.chatContainer)
         scrollChat = findViewById(R.id.scrollChat)
         editMessage = findViewById(R.id.editMessage)
@@ -116,6 +118,7 @@ class MainActivity : AppCompatActivity() {
         // SETELAH semua view terikat: applyTheme menyentuh editMessage dll.
         // (v12.0/12.1 crash di sini — applyTheme dipanggil sebelum inisialisasi.)
         applyTheme()
+        fetchQuota()
         restoreChat()
         if (shown.isEmpty()) {
             addBubble(
@@ -180,6 +183,34 @@ class MainActivity : AppCompatActivity() {
 
 
     /** Baris info token dari field usage backend (v12.5). "" bila tak ada. */
+    private fun updateQuotaUI(quota: JSONObject?) {
+        if (quota == null) return
+        val fmt = java.text.NumberFormat.getInstance(java.util.Locale("id", "ID"))
+        fun num(key: String): String {
+            val v = quota.optLong(key, -1)
+            return if (v >= 0) fmt.format(v) else "?"
+        }
+        textQuotaLive.text = "🪙 Sisa token: " + num("remaining_tokens") + " / " + num("limit_tokens") +
+            "  •  Sisa permintaan: " + num("remaining_requests") + " / " + num("limit_requests")
+    }
+
+    private fun fetchQuota() {
+        val url = prefs.getString("backend_url", DEFAULT_URL)!!.trimEnd('/')
+        executor.execute {
+            try {
+                val conn = (URL(url + "/health").openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 8000
+                    readTimeout = 8000
+                }
+                val text = conn.inputStream.bufferedReader().use { it.readText() }
+                val quota = JSONObject(text).optJSONObject("quota")
+                runOnUiThread { updateQuotaUI(quota) }
+            } catch (e: Exception) {
+                // diam saja: strip tetap menampilkan nilai terakhir
+            }
+        }
+    }
+
     private fun tokenLine(usage: JSONObject?): String {
         if (usage == null) return ""
         val total = usage.optInt("total_tokens", 0)
@@ -301,6 +332,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (::textQuotaLive.isInitialized) fetchQuota()
         // Sinkronkan sakelar header dengan pengaturan yang tersimpan.
         val sw = findViewById<Switch>(R.id.switchAgent)
         val saved = prefs.getBoolean("agent_default", false)
@@ -359,9 +391,10 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 if (full.isEmpty()) full.append(friendlyError(e)) else full.append("\n[Koneksi terputus di tengah jawaban]")
             }
-            val finalText = full.toString() + tokenLine(streamUsage)
+            val finalText = full.toString() + tokenLine(streamUsage?.optJSONObject("usage"))
             runOnUiThread {
                 stopTyping()
+                updateQuotaUI(streamUsage?.optJSONObject("quota"))
                 setBubbleFormatted(bubble, finalText)
                 shown.add(false to finalText)
                 saveChat()
@@ -397,7 +430,7 @@ class MainActivity : AppCompatActivity() {
             throw IllegalStateException("Backend menjawab ${conn.responseCode}: $msg")
         }
 
-        var usageFound: JSONObject? = null
+        var doneEvent: JSONObject? = null
         conn.inputStream.bufferedReader().useLines { lines ->
             for (line in lines) {
                 val trimmed = line.trim()
@@ -406,11 +439,11 @@ class MainActivity : AppCompatActivity() {
                 when {
                     event.has("chunk") -> onChunk(event.getString("chunk"))
                     event.has("error") -> throw IllegalStateException(event.getString("error"))
-                    event.optBoolean("done") -> usageFound = event.optJSONObject("usage")
+                    event.optBoolean("done") -> doneEvent = event
                 }
             }
         }
-        return usageFound
+        return doneEvent
     }
 
     // ------------------------------------------------------------- Mode Agen --
@@ -425,8 +458,10 @@ class MainActivity : AppCompatActivity() {
             var display = ""
             var confirmToken: String? = null
             var proposed = ""
+            var quotaObj: JSONObject? = null
             try {
                 val json = postAgent(JSONObject().put("message", text).put("session_id", sessionId))
+                quotaObj = json.optJSONObject("quota")
                 display = json.optString("reply", "(tanpa jawaban)")
                 val steps = json.optJSONArray("steps")
                 if (steps != null && steps.length() > 0) {
@@ -445,8 +480,9 @@ class MainActivity : AppCompatActivity() {
             val skillName = proposed
             runOnUiThread {
                 stopProcessLog()
-                setBubbleFormatted(bubble, shownText)
-                shown.add(false to shownText)
+                updateQuotaUI(quotaObj)
+                setBubbleFormatted(bubble, display)
+                shown.add(false to display)
                 saveChat()
                 setBusy(false)
                 scrollChat.post { scrollChat.fullScroll(ScrollView.FOCUS_DOWN) }

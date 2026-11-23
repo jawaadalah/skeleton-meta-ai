@@ -116,6 +116,9 @@ def _handle_agent(environ, start_response):
     usage = bm._get_usage()
     if usage:
         result["usage"] = usage
+    quota = bm._get_quota()
+    if quota:
+        result["quota"] = quota
     return _json(start_response, 200, result)
 
 
@@ -164,6 +167,9 @@ def _handle_chat(environ, start_response, streaming):
             usage = bm._get_usage()
             if usage:
                 done_obj["usage"] = usage
+            quota = bm._get_quota()
+            if quota:
+                done_obj["quota"] = quota
             yield ("data: " + json.dumps(done_obj, ensure_ascii=False) + "\n\n").encode("utf-8")
         start_response("200 OK", [
             ("Content-Type", "text/event-stream; charset=utf-8"),
@@ -191,6 +197,9 @@ def _handle_chat(environ, start_response, streaming):
     usage = bm._get_usage()
     if usage:
         out["usage"] = usage
+    quota = bm._get_quota()
+    if quota:
+        out["quota"] = quota
     return _json(start_response, 200, out)
 
 
@@ -218,7 +227,8 @@ def application(environ, start_response):
                          {"status": "ok", "version": bm.VERSION,
                           "mode": "mock" if bm.MOCK else "live", "model": bm.MODEL,
                           "auth": bool(bm.APP_TOKEN), "soul": bool(bm.SOUL_TEXT),
-                          "skills": len(bm.skills_mod.SKILLS)})
+                          "skills": len(bm.skills_mod.SKILLS),
+                          "quota": bm._get_quota()})
         return _json(start_response, 404, {"error": "not found"})
 
     if method == "POST":

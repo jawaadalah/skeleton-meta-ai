@@ -154,11 +154,11 @@ def test_v7():
     agent = lambda obj: call("POST", "/agent", obj)
 
     health = call("GET", "/health")
-    assert health["version"] == "11.2" and health["soul"] is True, health
+    assert health["version"] == "11.3" and health["soul"] is True, health
     assert health["skills"] == 16, health
     soul = call("GET", "/soul")["soul"]
     assert "Skele" in soul, soul[:100]
-    print("OK  v7 /health: versi 11.2, SOUL.md termuat, 16 skill terdaftar; /soul terbaca")
+    print("OK  v7 /health: versi 11.3, SOUL.md termuat, 16 skill terdaftar; /soul terbaca")
 
     r = agent({"message": "ingat bahwa warna favorit saya biru langit", "session_id": "v7-tes"})
     assert r["steps"][0]["skill"] == "ingat", r
@@ -298,6 +298,10 @@ def test_v11():
                    "usage": {"prompt_tokens": 11, "completion_tokens": 7, "total_tokens": 18}}
             raw = json.dumps(out).encode()
             self.send_response(200)
+            self.send_header("x-ratelimit-limit-requests", "1000")
+            self.send_header("x-ratelimit-remaining-requests", "999")
+            self.send_header("x-ratelimit-limit-tokens", "200000")
+            self.send_header("x-ratelimit-remaining-tokens", "199000")
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(raw)))
             self.end_headers()
@@ -343,6 +347,13 @@ def test_v11():
         assert seen.get("auth") == "Bearer kunci-aplikasi", seen
         assert seen.get("model") == "stub-model", seen
         assert resp.get("usage", {}).get("total_tokens") == 18, resp
+        assert resp.get("quota", {}).get("remaining_tokens") == 199000, resp
+        req = urllib.request.Request(base + "/health")
+        with urllib.request.urlopen(req, timeout=5) as r:
+            h2 = json.loads(r.read().decode("utf-8"))
+        assert h2.get("quota", {}).get("remaining_requests") == 999, h2
+        assert h2.get("quota", {}).get("remaining_tokens") == 199000, h2
+        print("OK  v11.3 kuota: header rate-limit tertangkap, /health menampilkan sisa kuota")
         print("OK  v11.2 info token: usage dari API diteruskan ke respons (total 18)")
         print("OK  v11 override LLM: base_url+model+api_key dari aplikasi dipakai (stub membuktikan), env server tidak dipakai")
         # Jalur WSGI (yang dipakai PythonAnywhere) juga wajib meneruskan override —
